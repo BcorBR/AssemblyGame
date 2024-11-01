@@ -1258,29 +1258,3 @@ mapa2 : var #1200
   static mapa2 + #1197, #2560
   static mapa2 + #1198, #2560
   static mapa2 + #1199, #2560
-
-printmapa2Screen:
-  push R0
-  push R1
-  push R2
-  push R3
-
-  loadn R0, #mapa2
-  loadn R1, #0
-  loadn R2, #1200
-
-  printmapa2ScreenLoop:
-
-    add R3,R0,R1
-    loadi R3, R3
-    outchar R3, R1
-    inc R1
-    cmp R1, R2
-
-    jne printmapa2ScreenLoop
-
-  pop R3
-  pop R2
-  pop R1
-  pop R0
-  rts

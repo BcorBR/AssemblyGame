@@ -827,9 +827,9 @@ mapa1 : var #1200
   static mapa1 + #786, #768
   static mapa1 + #787, #2560
   static mapa1 + #788, #2560
-  static mapa1 + #789, #768
+  static mapa1 + #789, #2560
   static mapa1 + #790, #768
-  static mapa1 + #791, #2560
+  static mapa1 + #791, #768
   static mapa1 + #792, #2560
   static mapa1 + #793, #2560
   static mapa1 + #794, #2560
@@ -868,11 +868,11 @@ mapa1 : var #1200
   static mapa1 + #825, #1536
   static mapa1 + #826, #2560
   static mapa1 + #827, #2560
-  static mapa1 + #828, #768
+  static mapa1 + #828, #2560
   static mapa1 + #829, #768
   static mapa1 + #830, #768
   static mapa1 + #831, #768
-  static mapa1 + #832, #2560
+  static mapa1 + #832, #768
   static mapa1 + #833, #2560
   static mapa1 + #834, #2560
   static mapa1 + #835, #2560
@@ -909,13 +909,13 @@ mapa1 : var #1200
   static mapa1 + #864, #1536
   static mapa1 + #865, #2560
   static mapa1 + #866, #2560
-  static mapa1 + #867, #768
+  static mapa1 + #867, #2560
   static mapa1 + #868, #768
   static mapa1 + #869, #768
   static mapa1 + #870, #768
   static mapa1 + #871, #768
   static mapa1 + #872, #768
-  static mapa1 + #873, #2560
+  static mapa1 + #873, #768
   static mapa1 + #874, #2560
   static mapa1 + #875, #2560
   static mapa1 + #876, #2560
@@ -951,13 +951,13 @@ mapa1 : var #1200
   static mapa1 + #904, #2560
   static mapa1 + #905, #2560
   static mapa1 + #906, #2560
-  static mapa1 + #907, #768
+  static mapa1 + #907, #2560
   static mapa1 + #908, #768
   static mapa1 + #909, #768
   static mapa1 + #910, #768
   static mapa1 + #911, #768
   static mapa1 + #912, #768
-  static mapa1 + #913, #2560
+  static mapa1 + #913, #768
   static mapa1 + #914, #2560
   static mapa1 + #915, #2560
   static mapa1 + #916, #2560
@@ -994,11 +994,11 @@ mapa1 : var #1200
   static mapa1 + #945, #2560
   static mapa1 + #946, #2560
   static mapa1 + #947, #2560
-  static mapa1 + #948, #768
+  static mapa1 + #948, #2560
   static mapa1 + #949, #768
   static mapa1 + #950, #768
   static mapa1 + #951, #768
-  static mapa1 + #952, #2560
+  static mapa1 + #952, #768
   static mapa1 + #953, #2560
   static mapa1 + #954, #2560
   static mapa1 + #955, #2560
@@ -1037,9 +1037,9 @@ mapa1 : var #1200
   static mapa1 + #986, #768
   static mapa1 + #987, #2560
   static mapa1 + #988, #2560
-  static mapa1 + #989, #256
+  static mapa1 + #989, #2560
   static mapa1 + #990, #256
-  static mapa1 + #991, #2560
+  static mapa1 + #991, #256
   static mapa1 + #992, #2560
   static mapa1 + #993, #2560
   static mapa1 + #994, #2560
@@ -1079,9 +1079,9 @@ mapa1 : var #1200
   static mapa1 + #1026, #768
   static mapa1 + #1027, #768
   static mapa1 + #1028, #2560
-  static mapa1 + #1029, #256
+  static mapa1 + #1029, #2560
   static mapa1 + #1030, #256
-  static mapa1 + #1031, #2560
+  static mapa1 + #1031, #256
   static mapa1 + #1032, #2560
   static mapa1 + #1033, #2560
   static mapa1 + #1034, #2560
@@ -1121,9 +1121,9 @@ mapa1 : var #1200
   static mapa1 + #1066, #768
   static mapa1 + #1067, #768
   static mapa1 + #1068, #2560
-  static mapa1 + #1069, #256
+  static mapa1 + #1069, #2560
   static mapa1 + #1070, #256
-  static mapa1 + #1071, #2560
+  static mapa1 + #1071, #256
   static mapa1 + #1072, #2560
   static mapa1 + #1073, #2560
   static mapa1 + #1074, #2560
@@ -1163,9 +1163,9 @@ mapa1 : var #1200
   static mapa1 + #1106, #768
   static mapa1 + #1107, #768
   static mapa1 + #1108, #2560
-  static mapa1 + #1109, #256
+  static mapa1 + #1109, #2560
   static mapa1 + #1110, #256
-  static mapa1 + #1111, #2560
+  static mapa1 + #1111, #256
   static mapa1 + #1112, #2560
   static mapa1 + #1113, #2560
   static mapa1 + #1114, #2560
@@ -1205,11 +1205,11 @@ mapa1 : var #1200
   static mapa1 + #1146, #768
   static mapa1 + #1147, #2560
   static mapa1 + #1148, #2560
-  static mapa1 + #1149, #256
+  static mapa1 + #1149, #2560
   static mapa1 + #1150, #256
-  static mapa1 + #1151, #2560
+  static mapa1 + #1151, #256
   static mapa1 + #1152, #2560
-  static mapa1 + #1153, #768
+  static mapa1 + #1153, #2560
   static mapa1 + #1154, #768
   static mapa1 + #1155, #2560
   static mapa1 + #1156, #2560
@@ -1228,16 +1228,16 @@ mapa1 : var #1200
   static mapa1 + #1167, #2560
   static mapa1 + #1168, #2560
   static mapa1 + #1169, #2560
-  static mapa1 + #1170, #256
+  static mapa1 + #1170, #1024
   static mapa1 + #1171, #256
-  static mapa1 + #1172, #2560
+  static mapa1 + #1172, #768
   static mapa1 + #1173, #2304
   static mapa1 + #1174, #1280
   static mapa1 + #1175, #2816
   static mapa1 + #1176, #256
   static mapa1 + #1177, #256
-  static mapa1 + #1178, #2816
-  static mapa1 + #1179, #1792
+  static mapa1 + #1178, #1280
+  static mapa1 + #1179, #2816
   static mapa1 + #1180, #768
   static mapa1 + #1181, #768
   static mapa1 + #1182, #768
@@ -1247,13 +1247,13 @@ mapa1 : var #1200
   static mapa1 + #1186, #2560
   static mapa1 + #1187, #2560
   static mapa1 + #1188, #2560
-  static mapa1 + #1189, #256
+  static mapa1 + #1189, #2560
   static mapa1 + #1190, #256
-  static mapa1 + #1191, #2560
-  static mapa1 + #1192, #768
+  static mapa1 + #1191, #256
+  static mapa1 + #1192, #2560
   static mapa1 + #1193, #768
   static mapa1 + #1194, #768
-  static mapa1 + #1195, #2560
+  static mapa1 + #1195, #768
   static mapa1 + #1196, #2560
   static mapa1 + #1197, #2560
   static mapa1 + #1198, #2560

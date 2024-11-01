@@ -12,21 +12,21 @@ mapaTotal : var #1680
   static mapaTotal + #8, #2560
   static mapaTotal + #9, #2560
   static mapaTotal + #10, #2560
-  static mapaTotal + #11, #2560
-  static mapaTotal + #12, #2560
-  static mapaTotal + #13, #2560
-  static mapaTotal + #14, #2560
-  static mapaTotal + #15, #2560
+  static mapaTotal + #11, #768
+  static mapaTotal + #12, #768
+  static mapaTotal + #13, #768
+  static mapaTotal + #14, #768
+  static mapaTotal + #15, #768
   static mapaTotal + #16, #2560
-  static mapaTotal + #17, #2560
-  static mapaTotal + #18, #2560
-  static mapaTotal + #19, #2560
+  static mapaTotal + #17, #768
+  static mapaTotal + #18, #768
+  static mapaTotal + #19, #768
   static mapaTotal + #20, #2560
-  static mapaTotal + #21, #2560
-  static mapaTotal + #22, #2560
-  static mapaTotal + #23, #2560
-  static mapaTotal + #24, #2560
-  static mapaTotal + #25, #2560
+  static mapaTotal + #21, #1280
+  static mapaTotal + #22, #2816
+  static mapaTotal + #23, #1280
+  static mapaTotal + #24, #768
+  static mapaTotal + #25, #768
   static mapaTotal + #26, #2560
   static mapaTotal + #27, #2560
   static mapaTotal + #28, #2560
@@ -37,10 +37,10 @@ mapaTotal : var #1680
   static mapaTotal + #33, #2560
   static mapaTotal + #34, #2560
   static mapaTotal + #35, #2560
-  static mapaTotal + #36, #2560
-  static mapaTotal + #37, #2560
-  static mapaTotal + #38, #2560
-  static mapaTotal + #39, #2560
+  static mapaTotal + #36, #2816
+  static mapaTotal + #37, #2816
+  static mapaTotal + #38, #256
+  static mapaTotal + #39, #2816
 
   ;Linha 1
   static mapaTotal + #40, #2560
@@ -53,36 +53,36 @@ mapaTotal : var #1680
   static mapaTotal + #47, #2560
   static mapaTotal + #48, #2560
   static mapaTotal + #49, #2560
-  static mapaTotal + #50, #2560
-  static mapaTotal + #51, #2560
-  static mapaTotal + #52, #2560
-  static mapaTotal + #53, #2560
-  static mapaTotal + #54, #2560
-  static mapaTotal + #55, #2560
-  static mapaTotal + #56, #2560
+  static mapaTotal + #50, #768
+  static mapaTotal + #51, #768
+  static mapaTotal + #52, #768
+  static mapaTotal + #53, #768
+  static mapaTotal + #54, #768
+  static mapaTotal + #55, #768
+  static mapaTotal + #56, #768
   static mapaTotal + #57, #2560
-  static mapaTotal + #58, #2560
-  static mapaTotal + #59, #2560
-  static mapaTotal + #60, #2560
-  static mapaTotal + #61, #2560
-  static mapaTotal + #62, #2560
-  static mapaTotal + #63, #2560
-  static mapaTotal + #64, #2560
-  static mapaTotal + #65, #2560
-  static mapaTotal + #66, #2560
+  static mapaTotal + #58, #768
+  static mapaTotal + #59, #768
+  static mapaTotal + #60, #768
+  static mapaTotal + #61, #2304
+  static mapaTotal + #62, #1280
+  static mapaTotal + #63, #768
+  static mapaTotal + #64, #1536
+  static mapaTotal + #65, #768
+  static mapaTotal + #66, #768
   static mapaTotal + #67, #2560
   static mapaTotal + #68, #2560
-  static mapaTotal + #69, #768
+  static mapaTotal + #69, #2560
   static mapaTotal + #70, #768
-  static mapaTotal + #71, #2560
+  static mapaTotal + #71, #768
   static mapaTotal + #72, #2560
   static mapaTotal + #73, #2560
   static mapaTotal + #74, #2560
   static mapaTotal + #75, #2560
   static mapaTotal + #76, #2560
-  static mapaTotal + #77, #2560
-  static mapaTotal + #78, #2560
-  static mapaTotal + #79, #2560
+  static mapaTotal + #77, #2816
+  static mapaTotal + #78, #2816
+  static mapaTotal + #79, #256
 
   ;Linha 2
   static mapaTotal + #80, #2560
@@ -94,37 +94,37 @@ mapaTotal : var #1680
   static mapaTotal + #86, #2560
   static mapaTotal + #87, #2560
   static mapaTotal + #88, #2560
-  static mapaTotal + #89, #2560
-  static mapaTotal + #90, #2560
-  static mapaTotal + #91, #2560
-  static mapaTotal + #92, #2560
-  static mapaTotal + #93, #2560
-  static mapaTotal + #94, #2560
-  static mapaTotal + #95, #2560
-  static mapaTotal + #96, #2560
-  static mapaTotal + #97, #2560
+  static mapaTotal + #89, #768
+  static mapaTotal + #90, #768
+  static mapaTotal + #91, #768
+  static mapaTotal + #92, #768
+  static mapaTotal + #93, #768
+  static mapaTotal + #94, #768
+  static mapaTotal + #95, #768
+  static mapaTotal + #96, #768
+  static mapaTotal + #97, #768
   static mapaTotal + #98, #2560
-  static mapaTotal + #99, #2560
-  static mapaTotal + #100, #2560
-  static mapaTotal + #101, #2560
-  static mapaTotal + #102, #2560
-  static mapaTotal + #103, #2560
-  static mapaTotal + #104, #2560
-  static mapaTotal + #105, #2560
+  static mapaTotal + #99, #1792
+  static mapaTotal + #100, #2304
+  static mapaTotal + #101, #2816
+  static mapaTotal + #102, #2304
+  static mapaTotal + #103, #1536
+  static mapaTotal + #104, #2816
+  static mapaTotal + #105, #1536
   static mapaTotal + #106, #2560
   static mapaTotal + #107, #2560
-  static mapaTotal + #108, #768
+  static mapaTotal + #108, #2560
   static mapaTotal + #109, #768
   static mapaTotal + #110, #768
   static mapaTotal + #111, #768
-  static mapaTotal + #112, #2560
+  static mapaTotal + #112, #768
   static mapaTotal + #113, #2560
   static mapaTotal + #114, #2560
   static mapaTotal + #115, #2560
   static mapaTotal + #116, #2560
   static mapaTotal + #117, #2560
-  static mapaTotal + #118, #2560
-  static mapaTotal + #119, #2560
+  static mapaTotal + #118, #2816
+  static mapaTotal + #119, #2816
 
   ;Linha 3
   static mapaTotal + #120, #2560
@@ -137,30 +137,30 @@ mapaTotal : var #1680
   static mapaTotal + #127, #2560
   static mapaTotal + #128, #2560
   static mapaTotal + #129, #2560
-  static mapaTotal + #130, #2560
-  static mapaTotal + #131, #2560
-  static mapaTotal + #132, #2560
-  static mapaTotal + #133, #2560
-  static mapaTotal + #134, #2560
-  static mapaTotal + #135, #2560
-  static mapaTotal + #136, #2560
+  static mapaTotal + #130, #768
+  static mapaTotal + #131, #768
+  static mapaTotal + #132, #768
+  static mapaTotal + #133, #768
+  static mapaTotal + #134, #768
+  static mapaTotal + #135, #768
+  static mapaTotal + #136, #768
   static mapaTotal + #137, #2560
-  static mapaTotal + #138, #2560
-  static mapaTotal + #139, #2560
-  static mapaTotal + #140, #2560
-  static mapaTotal + #141, #2560
-  static mapaTotal + #142, #2560
-  static mapaTotal + #143, #2560
-  static mapaTotal + #144, #2560
+  static mapaTotal + #138, #1792
+  static mapaTotal + #139, #2816
+  static mapaTotal + #140, #1792
+  static mapaTotal + #141, #2304
+  static mapaTotal + #142, #768
+  static mapaTotal + #143, #768
+  static mapaTotal + #144, #1536
   static mapaTotal + #145, #2560
   static mapaTotal + #146, #2560
-  static mapaTotal + #147, #768
+  static mapaTotal + #147, #2560
   static mapaTotal + #148, #768
   static mapaTotal + #149, #768
   static mapaTotal + #150, #768
   static mapaTotal + #151, #768
   static mapaTotal + #152, #768
-  static mapaTotal + #153, #2560
+  static mapaTotal + #153, #768
   static mapaTotal + #154, #2560
   static mapaTotal + #155, #2560
   static mapaTotal + #156, #2560
@@ -180,29 +180,29 @@ mapaTotal : var #1680
   static mapaTotal + #168, #2560
   static mapaTotal + #169, #2560
   static mapaTotal + #170, #2560
-  static mapaTotal + #171, #2560
-  static mapaTotal + #172, #2560
-  static mapaTotal + #173, #2560
-  static mapaTotal + #174, #2560
-  static mapaTotal + #175, #2560
+  static mapaTotal + #171, #768
+  static mapaTotal + #172, #768
+  static mapaTotal + #173, #768
+  static mapaTotal + #174, #768
+  static mapaTotal + #175, #768
   static mapaTotal + #176, #2560
   static mapaTotal + #177, #2560
   static mapaTotal + #178, #2560
-  static mapaTotal + #179, #2560
-  static mapaTotal + #180, #2560
+  static mapaTotal + #179, #1792
+  static mapaTotal + #180, #768
   static mapaTotal + #181, #2560
   static mapaTotal + #182, #2560
   static mapaTotal + #183, #2560
   static mapaTotal + #184, #2560
   static mapaTotal + #185, #2560
   static mapaTotal + #186, #2560
-  static mapaTotal + #187, #768
+  static mapaTotal + #187, #2560
   static mapaTotal + #188, #768
   static mapaTotal + #189, #768
   static mapaTotal + #190, #768
   static mapaTotal + #191, #768
   static mapaTotal + #192, #768
-  static mapaTotal + #193, #2560
+  static mapaTotal + #193, #768
   static mapaTotal + #194, #2560
   static mapaTotal + #195, #2560
   static mapaTotal + #196, #2560
@@ -223,9 +223,9 @@ mapaTotal : var #1680
   static mapaTotal + #209, #2560
   static mapaTotal + #210, #2560
   static mapaTotal + #211, #2560
-  static mapaTotal + #212, #2560
-  static mapaTotal + #213, #2560
-  static mapaTotal + #214, #2560
+  static mapaTotal + #212, #256
+  static mapaTotal + #213, #256
+  static mapaTotal + #214, #256
   static mapaTotal + #215, #2560
   static mapaTotal + #216, #2560
   static mapaTotal + #217, #2560
@@ -239,11 +239,11 @@ mapaTotal : var #1680
   static mapaTotal + #225, #2560
   static mapaTotal + #226, #2560
   static mapaTotal + #227, #2560
-  static mapaTotal + #228, #768
+  static mapaTotal + #228, #2560
   static mapaTotal + #229, #768
   static mapaTotal + #230, #768
   static mapaTotal + #231, #768
-  static mapaTotal + #232, #2560
+  static mapaTotal + #232, #768
   static mapaTotal + #233, #2560
   static mapaTotal + #234, #2560
   static mapaTotal + #235, #2560
@@ -265,9 +265,9 @@ mapaTotal : var #1680
   static mapaTotal + #249, #2560
   static mapaTotal + #250, #768
   static mapaTotal + #251, #768
-  static mapaTotal + #252, #2560
-  static mapaTotal + #253, #2560
-  static mapaTotal + #254, #2560
+  static mapaTotal + #252, #256
+  static mapaTotal + #253, #256
+  static mapaTotal + #254, #256
   static mapaTotal + #255, #768
   static mapaTotal + #256, #768
   static mapaTotal + #257, #768
@@ -282,9 +282,9 @@ mapaTotal : var #1680
   static mapaTotal + #266, #768
   static mapaTotal + #267, #2560
   static mapaTotal + #268, #2560
-  static mapaTotal + #269, #256
+  static mapaTotal + #269, #2560
   static mapaTotal + #270, #256
-  static mapaTotal + #271, #2560
+  static mapaTotal + #271, #256
   static mapaTotal + #272, #2560
   static mapaTotal + #273, #2560
   static mapaTotal + #274, #2560
@@ -308,7 +308,7 @@ mapaTotal : var #1680
   static mapaTotal + #290, #768
   static mapaTotal + #291, #768
   static mapaTotal + #292, #768
-  static mapaTotal + #293, #2560
+  static mapaTotal + #293, #256
   static mapaTotal + #294, #768
   static mapaTotal + #295, #768
   static mapaTotal + #296, #768
@@ -324,9 +324,9 @@ mapaTotal : var #1680
   static mapaTotal + #306, #768
   static mapaTotal + #307, #768
   static mapaTotal + #308, #2560
-  static mapaTotal + #309, #256
+  static mapaTotal + #309, #2560
   static mapaTotal + #310, #256
-  static mapaTotal + #311, #2560
+  static mapaTotal + #311, #256
   static mapaTotal + #312, #2560
   static mapaTotal + #313, #2560
   static mapaTotal + #314, #2560
@@ -366,9 +366,9 @@ mapaTotal : var #1680
   static mapaTotal + #346, #768
   static mapaTotal + #347, #768
   static mapaTotal + #348, #2560
-  static mapaTotal + #349, #256
+  static mapaTotal + #349, #2560
   static mapaTotal + #350, #256
-  static mapaTotal + #351, #2560
+  static mapaTotal + #351, #256
   static mapaTotal + #352, #2560
   static mapaTotal + #353, #2560
   static mapaTotal + #354, #2560
@@ -392,7 +392,7 @@ mapaTotal : var #1680
   static mapaTotal + #370, #768
   static mapaTotal + #371, #768
   static mapaTotal + #372, #768
-  static mapaTotal + #373, #2560
+  static mapaTotal + #373, #2304
   static mapaTotal + #374, #768
   static mapaTotal + #375, #768
   static mapaTotal + #376, #768
@@ -408,9 +408,9 @@ mapaTotal : var #1680
   static mapaTotal + #386, #768
   static mapaTotal + #387, #768
   static mapaTotal + #388, #2560
-  static mapaTotal + #389, #256
+  static mapaTotal + #389, #2560
   static mapaTotal + #390, #256
-  static mapaTotal + #391, #2560
+  static mapaTotal + #391, #256
   static mapaTotal + #392, #2560
   static mapaTotal + #393, #2560
   static mapaTotal + #394, #2560
@@ -433,9 +433,9 @@ mapaTotal : var #1680
   static mapaTotal + #409, #2560
   static mapaTotal + #410, #768
   static mapaTotal + #411, #768
-  static mapaTotal + #412, #2560
-  static mapaTotal + #413, #2560
-  static mapaTotal + #414, #2560
+  static mapaTotal + #412, #2304
+  static mapaTotal + #413, #2816
+  static mapaTotal + #414, #2304
   static mapaTotal + #415, #768
   static mapaTotal + #416, #768
   static mapaTotal + #417, #768
@@ -450,12 +450,12 @@ mapaTotal : var #1680
   static mapaTotal + #426, #768
   static mapaTotal + #427, #2560
   static mapaTotal + #428, #2560
-  static mapaTotal + #429, #256
+  static mapaTotal + #429, #2560
   static mapaTotal + #430, #256
-  static mapaTotal + #431, #2560
+  static mapaTotal + #431, #256
   static mapaTotal + #432, #2560
   static mapaTotal + #433, #2560
-  static mapaTotal + #434, #2560
+  static mapaTotal + #434, #768
   static mapaTotal + #435, #2560
   static mapaTotal + #436, #2560
   static mapaTotal + #437, #2560
@@ -473,16 +473,16 @@ mapaTotal : var #1680
   static mapaTotal + #447, #2560
   static mapaTotal + #448, #2560
   static mapaTotal + #449, #2560
-  static mapaTotal + #450, #256
+  static mapaTotal + #450, #1024
   static mapaTotal + #451, #256
-  static mapaTotal + #452, #2560
-  static mapaTotal + #453, #2560
-  static mapaTotal + #454, #2560
-  static mapaTotal + #455, #2560
+  static mapaTotal + #452, #768
+  static mapaTotal + #453, #2304
+  static mapaTotal + #454, #1280
+  static mapaTotal + #455, #2816
   static mapaTotal + #456, #256
   static mapaTotal + #457, #256
-  static mapaTotal + #458, #2560
-  static mapaTotal + #459, #2560
+  static mapaTotal + #458, #1280
+  static mapaTotal + #459, #2816
   static mapaTotal + #460, #768
   static mapaTotal + #461, #768
   static mapaTotal + #462, #768
@@ -492,18 +492,19 @@ mapaTotal : var #1680
   static mapaTotal + #466, #2560
   static mapaTotal + #467, #2560
   static mapaTotal + #468, #2560
-  static mapaTotal + #469, #256
+  static mapaTotal + #469, #2560
   static mapaTotal + #470, #256
-  static mapaTotal + #471, #2560
+  static mapaTotal + #471, #256
   static mapaTotal + #472, #2560
-  static mapaTotal + #473, #2560
-  static mapaTotal + #474, #2560
-  static mapaTotal + #475, #2560
+  static mapaTotal + #473, #768
+  static mapaTotal + #474, #768
+  static mapaTotal + #475, #768
   static mapaTotal + #476, #2560
   static mapaTotal + #477, #2560
   static mapaTotal + #478, #2560
   static mapaTotal + #479, #2560
 
+mapaTotal : var #1200
   ;Linha 12
   static mapaTotal + #480, #2560
   static mapaTotal + #481, #2560
@@ -512,22 +513,22 @@ mapaTotal : var #1680
   static mapaTotal + #484, #256
   static mapaTotal + #485, #2560
   static mapaTotal + #486, #2560
-  static mapaTotal + #487, #2560
-  static mapaTotal + #488, #2560
-  static mapaTotal + #489, #256
-  static mapaTotal + #490, #256
-  static mapaTotal + #491, #2560
-  static mapaTotal + #492, #2560
-  static mapaTotal + #493, #2560
+  static mapaTotal + #487, #1792
+  static mapaTotal + #488, #768
+  static mapaTotal + #489, #1024
+  static mapaTotal + #490, #2816
+  static mapaTotal + #491, #1024
+  static mapaTotal + #492, #1536
+  static mapaTotal + #493, #768
   static mapaTotal + #494, #2560
   static mapaTotal + #495, #256
   static mapaTotal + #496, #256
   static mapaTotal + #497, #2560
   static mapaTotal + #498, #2560
-  static mapaTotal + #499, #2560
+  static mapaTotal + #499, #1280
   static mapaTotal + #500, #256
   static mapaTotal + #501, #256
-  static mapaTotal + #502, #2560
+  static mapaTotal + #502, #1792
   static mapaTotal + #503, #2560
   static mapaTotal + #504, #256
   static mapaTotal + #505, #256
@@ -540,7 +541,7 @@ mapaTotal : var #1680
   static mapaTotal + #512, #2560
   static mapaTotal + #513, #256
   static mapaTotal + #514, #256
-  static mapaTotal + #515, #2560
+  static mapaTotal + #515, #768
   static mapaTotal + #516, #2560
   static mapaTotal + #517, #2560
   static mapaTotal + #518, #2560
@@ -553,15 +554,15 @@ mapaTotal : var #1680
   static mapaTotal + #523, #256
   static mapaTotal + #524, #256
   static mapaTotal + #525, #2560
-  static mapaTotal + #526, #2560
-  static mapaTotal + #527, #2560
-  static mapaTotal + #528, #2560
-  static mapaTotal + #529, #256
-  static mapaTotal + #530, #256
-  static mapaTotal + #531, #2560
-  static mapaTotal + #532, #2560
-  static mapaTotal + #533, #2560
-  static mapaTotal + #534, #2560
+  static mapaTotal + #526, #1792
+  static mapaTotal + #527, #2816
+  static mapaTotal + #528, #1792
+  static mapaTotal + #529, #1280
+  static mapaTotal + #530, #1024
+  static mapaTotal + #531, #1536
+  static mapaTotal + #532, #2816
+  static mapaTotal + #533, #1536
+  static mapaTotal + #534, #768
   static mapaTotal + #535, #2560
   static mapaTotal + #536, #2560
   static mapaTotal + #537, #2560
@@ -595,14 +596,14 @@ mapaTotal : var #1680
   static mapaTotal + #563, #256
   static mapaTotal + #564, #256
   static mapaTotal + #565, #2560
-  static mapaTotal + #566, #2560
-  static mapaTotal + #567, #2560
-  static mapaTotal + #568, #2560
-  static mapaTotal + #569, #2560
-  static mapaTotal + #570, #2560
-  static mapaTotal + #571, #2560
-  static mapaTotal + #572, #2560
-  static mapaTotal + #573, #2560
+  static mapaTotal + #566, #768
+  static mapaTotal + #567, #1792
+  static mapaTotal + #568, #1280
+  static mapaTotal + #569, #2816
+  static mapaTotal + #570, #1280
+  static mapaTotal + #571, #768
+  static mapaTotal + #572, #1536
+  static mapaTotal + #573, #768
   static mapaTotal + #574, #2560
   static mapaTotal + #575, #2560
   static mapaTotal + #576, #2560
@@ -638,10 +639,10 @@ mapaTotal : var #1680
   static mapaTotal + #604, #256
   static mapaTotal + #605, #2560
   static mapaTotal + #606, #2560
-  static mapaTotal + #607, #2560
-  static mapaTotal + #608, #2560
-  static mapaTotal + #609, #2560
-  static mapaTotal + #610, #2560
+  static mapaTotal + #607, #768
+  static mapaTotal + #608, #768
+  static mapaTotal + #609, #1280
+  static mapaTotal + #610, #768
   static mapaTotal + #611, #2560
   static mapaTotal + #612, #2560
   static mapaTotal + #613, #2560
@@ -1763,29 +1764,3 @@ mapaTotal : var #1680
   static mapaTotal + #1677, #2560
   static mapaTotal + #1678, #2560
   static mapaTotal + #1679, #2560
-
-printmapaTotalmapaTotal:
-  push R0
-  push R1
-  push R2
-  push R3
-
-  loadn R0, #mapaTotal
-  loadn R1, #0
-  loadn R2, #1200
-
-  printmapaTotalmapaTotalLoop:
-
-    add R3,R0,R1
-    loadi R3, R3
-    outchar R3, R1
-    inc R1
-    cmp R1, R2
-
-    jne printmapaTotalmapaTotalLoop
-
-  pop R3
-  pop R2
-  pop R1
-  pop R0
-  rts
