@@ -1,41 +1,99 @@
+call render
 jmp inGame
 
 inGame:
-  jmp render
+  call mapSlideTest
+  jmp inGame
+
+
+
+
 
 render:
   push R0
   push R1
   push R2
   push R3
+  push R4
 
   loadn R0, #mapaTotal ; R0 = base addr map
   load R1, renderVar   ; R1 = min coord to be rendered, is incremented until max coord
   loadn R2, #renderVar ; R2 = addr to max coord number to be rendered
   inc R2
   loadi R2, R2         ; R2 = mem(R2)
+  loadn R4, #0         ; R4 = pix position on screen
 
   renderLoop:
 
     add R3,R0,R1
     loadi R3, R3
-    outchar R3, R1
-    inc R1
-    cmp R1, R2
+    outchar R3, R4 
+    inc R4 ; pixel position on screen
+    inc R1 ; map coordinate to be rendered
+    cmp R1, R2 ; R2 = map coordinate limit
 
     jne renderLoop
 
+  pop R4
   pop R3
   pop R2
   pop R1
   pop R0
-  halt
   rts
-  
+
+
+mapSlideTest:
+  ; if inchar == 's' AND R2 == 1680, return
+  ; if inchar == 'w' AND R1 == 0, return
+  ; PUSHs and POPs  
+  push R0
+  push R1
+  push R2
+  push R3
+
+  inchar R0
+  loadn R3, #'s'
+  cmp R3, R0
+  jeq testDown
+  jmp testDownFinish ;change this later
+  ; test 'w' below
+
+
+
+  testDown:
+    loadn R1, #renderVar  ; R0 = key; R1 = end: (renderdvar +1); R2 = mem(rendervar+1)
+    inc R1                ; takes second num in array of rendervar (max number)
+    loadi R2, R1
+    loadn R3, #1680
+    cmp R3, R2
+    jne renderBelowInc    ; if not in pixel limit jump next step, else return
+    jmp testDownFinish
+
+    renderBelowInc:
+    loadn R3, #40
+    add R2, R2, R3       ; adds to max pixel rendering
+    storei R1, R2
+    
+    dec R1                ; subs to min pixel rendering
+    loadi R2, R1
+    loadn R3, #40
+    sub R2, R2, R3
+    storei R1, R2
+
+    call render
+
+    testDownFinish:
+      pop R0
+      pop R1
+      pop R2
+      pop R3
+      rts
+
+
 ; stores min and max coord to be rendered
 renderVar: var #2
-  static renderVar + #0, #0
-  static renderVar + #1, #1200
+  static renderVar + #0, #0     ; first coord rendered
+  static renderVar + #1, #1200  ; can't reach this number
 
 
 mapCoord: var #1680
