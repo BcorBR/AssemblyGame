@@ -2,7 +2,11 @@ call render
 jmp inGame
 
 inGame:
-  call mapSlideTest
+  ; update coord of mobs and player then rend map, then rend mobs and players
+  ; there is no need for array with all coords of map, simple array that only has the values
+  ; coords with special properties, walls, sceranio to hide, mobs and player
+  
+  ;call mapSlideTest
   jmp inGame
 
 
@@ -52,14 +56,39 @@ mapSlideTest:
   push R3
 
   inchar R0
+  
   loadn R3, #'s'
   cmp R3, R0
   jeq testDown
-  jmp testDownFinish ;change this later
-  ; test 'w' below
+  
+  loadn R3, #'w'
+  cmp R3, R0
+  jeq testUp
 
+  jmp slideFinish ;change this later
 
+  testUp:
+    loadn R1, #renderVar  ; R0 = key; R1 = end: (renderdvar +1); R2 = mem(rendervar+1)
+    loadi R2, R1
+    loadn R3, #0
+    cmp R3, R2
+    jne renderAboveInc    ; if not in pixel limit jump next step, else return
+    jmp slideFinish
 
+    renderAboveInc:
+    loadn R3, #40
+    sub R2, R2, R3       ; adds to max pixel rendering
+    storei R1, R2
+    
+    inc R1                ; subs to min pixel rendering
+    loadi R2, R1
+    sub R2, R2, R3
+    storei R1, R2
+
+    call render
+    jmp slideFinish
+
+    
   testDown:
     loadn R1, #renderVar  ; R0 = key; R1 = end: (renderdvar +1); R2 = mem(rendervar+1)
     inc R1                ; takes second num in array of rendervar (max number)
@@ -67,7 +96,7 @@ mapSlideTest:
     loadn R3, #1680
     cmp R3, R2
     jne renderBelowInc    ; if not in pixel limit jump next step, else return
-    jmp testDownFinish
+    jmp slideFinish
 
     renderBelowInc:
     loadn R3, #40
@@ -76,13 +105,13 @@ mapSlideTest:
     
     dec R1                ; subs to min pixel rendering
     loadi R2, R1
-    loadn R3, #40
-    sub R2, R2, R3
+    add R2, R2, R3
     storei R1, R2
 
     call render
+    jmp slideFinish
 
-    testDownFinish:
+    slideFinish:
       pop R0
       pop R1
       pop R2
