@@ -52,13 +52,15 @@ DelayMove:
 
 restoreDelay:
   push R0
+  push R1
 
   ; must be stored only if playerMove succeded
-  loadn R1, #20
+  loadn R1, #10
   loadn R0, #65000
   store delayPlayerMove2,  R0
   store delayPlayerMove1, R1
 
+  pop R1
   pop R0
   rts
 
@@ -78,22 +80,111 @@ playerMove:
   loadn R1, #'s'
   cmp R0, R1
   jeq playerMoveDown
+
+  loadn R1, #'a'
+  cmp R0, R1
+  jeq playerMoveLeft
+
+  loadn R1, #'d'
+  cmp R0, R1
+  jeq playerMoveRight
+
   jmp playerMoveFinish
+
+  playerMoveRight:
+    load R0, playerCoordInMap
+    inc R0
+    inc R0
+    loadn R3, #40; if (playerCoord + 2) mod 40 != 0, do nothing
+    mod R2, R0, R3
+    jz playerMoveFinish
+
+    ; render pixels under player's left side
+    dec R0
+    dec R0   ; index of pixel in mapTotal upper left of character
+    loadn R4, #40
+    add R1, R0, R4 ; index of pixel in mapTotal lower right of character
+
+    loadn R4, #mapTotal
+    add R0, R0, R4 ; first pixel info addr
+    add R1, R1, R4 ; second pixel info addr
+    loadi R0, R0
+    loadi R1, R1
+
+    load R2, playerCoordRender ; first screen coord
+    loadn R4, #40
+    add R3, R2, R4 ; second screen coord
+
+    outchar R0, R2
+    outchar R1, R3
+
+    ; increment plyaerCoordInMap and InRender
+    load R0, playerCoordInMap
+    load R1, playerCoordRender
+    inc R0
+    inc R1
+    store playerCoordInMap, R0
+    store playerCoordRender, R1
+
+    call renderPlayer
+    call restoreDelay
+
+    jmp playerMoveFinish
+
+
+  playerMoveLeft:
+    load R0, playerCoordInMap
+    loadn R3, #40; if playerCoord mod 40 != 0, do nothing
+    mod R2, R0, R3
+    jz playerMoveFinish
+
+    ; render pixels under player's right side
+    inc R0   ; index of pixel in mapTotal upper right of character
+    loadn R4, #40
+    add R1, R0, R4 ; index of pixel in mapTotal lower right of character
+
+    loadn R4, #mapTotal
+    add R0, R0, R4 ; first pixel info addr
+    add R1, R1, R4 ; second pixel info addr
+    loadi R0, R0
+    loadi R1, R1
+
+    load R2, playerCoordRender
+    inc R2         ; first screen coord
+    loadn R4, #40
+    add R3, R2, R4 ; second screen coord
+
+    outchar R0, R2
+    outchar R1, R3
+
+    ; decrement plyaerCoordInMap and InRender
+    load R0, playerCoordInMap
+    load R1, playerCoordRender
+    dec R0
+    dec R1
+    store playerCoordInMap, R0
+    store playerCoordRender, R1
+
+    call renderPlayer
+    call restoreDelay
+
+    jmp playerMoveFinish
+
 
   playerMoveDown:
     load R0, playerCoordInMap
-    ; if playerCoordInMap greater than 1639 (last pixel of penultimate line), can't go down, limit of map reached
-    loadn R1, #1639
+    ; if playerCoordInMap greater than 1600 (first pixel of penultimate line), can't go down, limit of map reached
+    loadn R1, #1600
     cmp R0, R1
     ; if greater or equal, it's above the last line of the map,
-    jgr playerMoveFinish ; if lesser, finish routine
+    jeg playerMoveFinish ; if lesser, finish routine
 
     ; condition here to ask if it should go to map slide
     load R2, playerCoordRender
-    loadn R3, #920    ; will slide down if player in screen coord greater than 920 (greater than 6th line bottom to top) AND mapCoord NOT greater than 1439
-    cmp R2, R3                                                               ; (1199 - 39) - 240                                              (1679) - 240
+    loadn R3, #959    ; will slide down if player in screen coord greater than 920 (greater than 6th line bottom to top) AND mapCoord NOT greater than 1439
+    cmp R2, R3                                                               ; (1199) - 240                                              (1679) - 240
     jel slideDownFalse
-    load R2, playerCoordInMap ; check if playerCoordMap NOT greater than 1439
+    load R2, playerCoordInMap ; check if playerCoordInMap NOT greater than 1439
     loadn R3, #1439
     cmp R2, R3
     cel slideDown
@@ -136,6 +227,7 @@ playerMove:
     slideDownTrue:
       ; increments player coords in map by 40
       load R0, playerCoordInMap
+      loadn R1, #40
       add R0, R0, R1
       store playerCoordInMap, R0
       
@@ -144,7 +236,7 @@ playerMove:
       jmp playerMoveFinish
 
 
-  playerMoveUp:
+  playerMoveUp:  
     load R0, playerCoordInMap
     ; if playerCoordInMap below 40 (1st line 0 indexed), can't go upper, limit of map reached
     loadn R1, #40
@@ -157,7 +249,7 @@ playerMove:
     loadn R3, #240    ; will slide up if player in screen coord below 240 (above 6th line) AND NOT below mapCoord 240
     cmp R2, R3
     jeg slideUpFalse
-    load R2, playerCoordInMap ; check if playerCoordMap below 240
+    load R2, playerCoordInMap ; check if playerCoordInMap below 240
     cmp R2, R3
     ceg slideUp
     jeg slideUpTrue
@@ -203,6 +295,7 @@ playerMove:
     slideUpTrue:
       ; decrements player coords in map by 40
       load R0, playerCoordInMap
+      loadn R1, #40
       sub R0, R0, R1
       store playerCoordInMap, R0
       
@@ -372,11 +465,11 @@ skinPlayerFrontStop: var #4
 
 
 playerCoordRender: var #1
-  static playerCoordRender, #120
+  static playerCoordRender, #38
   ; last pos is 1158
 
 playerCoordInMap: var #1
-  static playerCoordInMap, #120
+  static playerCoordInMap, #38
   ; last pos is 1638
 
 
