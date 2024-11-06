@@ -379,13 +379,16 @@ renderPlayer:
   push R5
   push R6
   push R7
-
-  breakp
+  
   loadn R7, #0 ; will be used to check stealth squares
   store playerProp, R7 ; restarts stealth
 
   ; skins are 2305 - 2306
   ;           771  - 772
+  ; fixing values for rendering
+  load R0, playerCoordRender ; R0 = mem(playerCoordRender)
+  loadn R1, #2305
+
   ; check if it's in stealth coord left face
   load R4, playerCoordInMap
   loadn R5, #mapProp
@@ -400,13 +403,15 @@ renderPlayer:
   jmp checkRightFaceStealth ; left face should not render
 
     renderLeftFace:
-      load R0, playerCoordRender ; R0 = mem(playerCoordRender)
-      loadn R1, #2305
       outchar R1, R0
 
   checkRightFaceStealth:
-    ; checks if right face is in stealth coord
+    ; fixing values for rendering
     loadn R2, #1
+    add R0, R0, R2 ; next coord to the right
+    add R1, R1, R2 ; next skin
+
+    ; checks if right face is in stealth coord
     add R4, R4, R2 ; R4 has mem addr of cur mapProp
     loadi R5, R4
     cmp R5, R6
@@ -414,48 +419,70 @@ renderPlayer:
     
     inc R7 ; holds amount of stealth squares excluding flower stealth, 
           ; if it reaches 2, plant is in stealth mode
-    ; checks if it's reached 2 stealth squares
     jmp checkRightLegStealth ; should not render right face
 
     renderRightFace:
-      add R0, R0, R2 ; next coord to the right
-      add R1, R1, R2 ; next skin
       outchar R1, R0
   
   checkRightLegStealth:
-    ; checks if right leg is in stealth coord
+    ; fixing values for rendering
     loadn R3, #40
+    add R0, R0, R3 ; one coord down
+    loadn R1, #772 ; lower right skin
+
+    ; checks if right leg is in stealth coord
     add R4, R4, R3 ; R4 has mem addr of cur mapProp
     loadi R5, R4
+
+    loadn R6, #3 ; check if it's flower stealth
     cmp R5, R6
-    jne renderRightLeg
-    
-    inc R7 ; holds amount of stealth squares excluding flower stealth, 
-          ; if it reaches 2, plant is in stealth mode
-    ; checks if it's reached 2 stealth squares
-    jmp checkLeftLegRender ; should not render right leg
+    jne checkRightLegStealth_2 ; if not, checks if it's normal stealth
 
-    renderRightLeg:
-      add R0, R0, R3 ; one coord down
-      loadn R1, #772 ; lower right skin
-      outchar R1, R0
+    store playerProp, R2 ; stores 1
+    call renderBackRightLeg ; renders scenario at cord
 
-  checkLeftLegRender:
+    jmp checkLeftLegStealth
+
+    checkRightLegStealth_2:
+      loadn R6, #2
+      cmp R5, R6 ; checks if it's 2
+      jne renderRightLeg
+      
+      inc R7 ; holds amount of stealth squares excluding flower stealth, 
+            ; if it reaches 2, plant is in stealth mode
+      jmp checkLeftLegStealth ; should not render right leg
+
+      renderRightLeg:
+        outchar R1, R0
+
+  checkLeftLegStealth:
     ; checks if left leg is in stealth coord
     sub R4, R4, R2 ; R4 has mem addr of cur mapProp
     loadi R5, R4
-    cmp R5, R6
-    jne renderLeftLeg
-    
-    inc R7 ; holds amount of stealth squares excluding flower stealth, 
-          ; if it reaches 2, plant is in stealth mode
-    ; checks if it's reached 2 stealth squares
-    jmp activateStealth ; should not render right leg
 
-    renderLeftLeg:
-      sub R0, R0, R2 ; one coord left
-      sub R1, R1, R2 ; next skin
-      outchar R1, R0
+    ; checks flower stealth
+    loadn R6, #3
+    cmp R5, R6 ; checks if it's 3
+    jne checkLeftLegStealth_2 ; if not, checks if it's normal stealth
+
+    store playerProp, R2 ; stores 1
+    call renderBackLeftLeg ; renders scenario at cord
+
+    jmp finishRenderPlayer
+
+    checkLeftLegStealth_2:
+      loadn R6, #2
+      cmp R5, R6 ; checks if it's 2
+      jne renderLeftLeg
+      
+      inc R7 ; holds amount of stealth squares excluding flower stealth, 
+            ; if it reaches 2, plant is in stealth mode
+      jmp activateStealth ; should not render right leg
+
+      renderLeftLeg:
+        sub R0, R0, R2 ; one coord left
+        sub R1, R1, R2 ; next skin
+        outchar R1, R0
 
   activateStealth:
     cmp R7, R6 ; if stealthCounter >= 2 : activate stealth
@@ -473,6 +500,53 @@ renderPlayer:
     pop R0
     rts
 
+
+; renders pix in the backround of left leg
+renderBackLeftLeg:
+  push R0
+  push R1
+  push R2
+
+  loadn R0, #mapTotal
+  load R1, playerCoordInMap
+  loadn R2, #40
+  add R0, R0, R1
+  add R0, R0, R2
+  loadi R0, R0
+  
+  load R1, playerCoordRender
+  add R1, R1, R2
+
+  outchar R0, R1
+
+  pop R2
+  pop R1
+  pop R0
+  rts
+
+
+; renders pix in the backround of right leg
+renderBackRightLeg:
+  push R0
+  push R1
+  push R2
+
+  loadn R0, #mapTotal
+  load R1, playerCoordInMap
+  loadn R2, #41
+  add R0, R0, R1
+  add R0, R0, R2
+  loadi R0, R0
+  
+  load R1, playerCoordRender
+  add R1, R1, R2
+
+  outchar R0, R1
+
+  pop R2
+  pop R1
+  pop R0
+  rts
 
 render:
   push R0
@@ -623,11 +697,11 @@ skinPlayerFrontStop: var #4
 
 
 playerCoordRender: var #1
-  static playerCoordRender, #0
+  static playerCoordRender, #83
 
 
 playerCoordInMap: var #1
-  static playerCoordInMap, #0
+  static playerCoordInMap, #83
 
 
 ; stores min and max coord to be rendered
@@ -641,7 +715,7 @@ renderVar: var #2
 mapProp : var #1680
 
   ;Linha 0
-  static mapProp + #0, #0
+  static mapProp + #0, #1
   static mapProp + #1, #0
   static mapProp + #2, #0
   static mapProp + #3, #0
@@ -1115,12 +1189,12 @@ mapProp : var #1680
   static mapProp + #449, #0
   static mapProp + #450, #3
   static mapProp + #451, #2
-  static mapProp + #452, #2
+  static mapProp + #452, #0
   static mapProp + #453, #3
   static mapProp + #454, #3
   static mapProp + #455, #3
-  static mapProp + #456, #1
-  static mapProp + #457, #1
+  static mapProp + #456, #2
+  static mapProp + #457, #2
   static mapProp + #458, #3
   static mapProp + #459, #3
   static mapProp + #460, #2
@@ -1165,7 +1239,7 @@ mapProp : var #1680
   static mapProp + #497, #0
   static mapProp + #498, #0
   static mapProp + #499, #3
-  static mapProp + #500, #3
+  static mapProp + #500, #2
   static mapProp + #501, #2
   static mapProp + #502, #0
   static mapProp + #503, #0
