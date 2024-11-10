@@ -32,6 +32,7 @@ testLevel:
 mobMain:
   push R0
   push R1
+  push R2
 
   ; checks which mobs are active and does calculates their behaviour if active
   checkActiveMob1:
@@ -46,6 +47,7 @@ mobMain:
 
   checkActiveMob2:
 
+  pop R2
   pop R1
   pop R0
   rts
@@ -137,13 +139,14 @@ behaveMob:
         sub R6, R1, R2 ; has to render in coord (mapCoord - minRenderVar)
         outchar R4, R6
 
-        ; renders right face
+        ; renders right leg
         inc R3
         loadi R4, R3 ; right face skin
         inc R6 ; increments render coord
         outchar R4, R6
 
 
+  ; checks chaseCondition not chaseBool
   checkChaseBool:
     load R1, playerCoordInMap
     call chaseCondition ; tests condition for chase state
@@ -155,7 +158,7 @@ behaveMob:
 
     conditionChaseTrue:
       loadn R2, #7
-      add R2 R2, R0 ; addr to chase bool
+      add R2, R2, R0 ; addr to chase bool
       loadi R4, R2
       cmp R4, R3 ; chase bool == 1?
       jeq behaveMobFinish ; if chaseBool == 1 finish
@@ -172,7 +175,7 @@ behaveMob:
 
     conditionChaseFalse:
       loadn R2, #7
-      add R2 R2, R0 ; addr to chase bool
+      add R2, R2, R0 ; addr to chase bool
       loadi R4, R2
       cmp R4, R3 ; chase bool == 1?
       jne testAlertBool ; if chaseBool == 0 test alertBool
@@ -208,7 +211,6 @@ behaveMob:
     pop R3
     pop R2
     pop R1
-    pop R0
     rts
 
 ; R0 will be used as addr to chosen mob
@@ -216,6 +218,7 @@ delayMobAlert:
   push R1
   push R2
   push R3  
+  push R4
   
   loadn R1, #11
   add R2, R1, R0 ; addr to timer 2
@@ -230,18 +233,20 @@ delayMobAlert:
 
   delayMobAlertTimer1:
     dec R2 ; addr to timer 1
+
     loadi R1, R2
     cmp R1, R3 ; if equal to 0, alertBool = 0 and restore timer
                ; else, dec timer1 and restore timer2
     jne delayMobAlertTimer1Dec
 
     ; if equal to 0
-    loadn R4, #1000
-    storei R2, R4 ; stores 1000 to timer1
+    loadn R4, #50
+    storei R2, R4 ; stores 50 to timer1
     inc R2
     loadn R4, #65000
     storei R2, R4 ; stores 65000 to timer2
     dec R2
+    dec R2 
     dec R2 ; addr of alertBool
     storei R2, R3 ; stores 0 to alertBool
 
@@ -250,7 +255,16 @@ delayMobAlert:
     add R1, R1, R0 ; addr to mobCoord
     loadi R1, R1
     loadn R2, #80
+    sub R1, R1, R2 ; coord inMap of inter
 
+    ; getting pixel info on mapTotal
+    loadn R2, #mapTotal
+    add R2, R1, R2 ; addr of mapTotal pix
+    loadi R2, R2 ; pix info
+    ; gets coordinRender
+    load R3, renderVar
+    sub R1, R1, R3 ; coord in Render
+    outchar R2, R1
 
     jmp delayMobAlertFinish
 
@@ -262,6 +276,7 @@ delayMobAlert:
       storei R2, R1 ; restore timer 2
 
   delayMobAlertFinish:
+    pop R4
     pop R3
     pop R2
     pop R1
@@ -271,19 +286,19 @@ delayMobAlert:
 
 ; R0 will come from another function as address to mob of choice
 renderExclaInter:
-push R1
-push R2
-push R3
-push R4
-push R5
+  push R1
+  push R2
+  push R3
+  push R4
+  push R5
 
-
+  ; check if chase bool active to render excla
   loadn R1, #7
-  add R1, R1, R0
+  add R1, R1, R0 ; R1 has addr to chase bool
   loadi R2, R1 ; chase bool
   loadn R3, #1
   cmp R2, R3
-  jne renderExclaInterAlertBool
+  jne renderExclaInterAlertBool ; if not, check alert bool
 
   ; renders excla
   dec R1 ; addr to coordInMap
@@ -313,7 +328,7 @@ push R5
     dec R1
     dec R1 ; addr to coordInMap
     loadi R1, R1
-    ; checks if mob not above 3rd line of render so excla/inter can be rendered
+    ; checks if mob not above 3rd line (1-indexed) of render so excla/inter can be rendered
     load R2, renderVar ; min var of render
     sub R2, R1, R2 ; coord of mob in render
     loadn R3, #79 ; last coord in 2nd line (1-indexed)
@@ -323,7 +338,7 @@ push R5
 
     ; actual rendering
     inc R3 ; subs 2 in y axis (80)
-    sub R2, R2, R3 ; coord of excla/inter
+    sub R2, R2, R3 ; coord of excla/inter in render
     loadn R3, #3135 ; interogation
     outchar R3, R2
 
@@ -473,33 +488,44 @@ push R5
 ; if player is at front side of mob and if stealth true or false
 ; returns chase state
 chaseCondition:
+  ; checks which side mob is facing  
+  loadn R5, #9
+  add R5, R5, R0 ; addr to side mob is facing
+  loadi R5, R5
+  loadn R3, #0
+  cmp R5, R3
+  jne rightSideChase ; if side == 1 (right side)
+
+  ; sees if player is at right side of mob
   loadn R2, #6
   add R3, R2, R0 ; addr to mobCoord
   loadi R3, R3 ; mob Coord
   loadn R2, #40
 
+  ; finds x axis coord
   mod R3, R3, R2 ; mobCoord mod 40
   mod R4, R1, R2 ; playerCoordMap mod 40
 
-  ; checks which side mob is facing  
-  loadn R5, #9
-  add R5, R5, R0 ; addr to side mob is facing
-  loadi R5, R5
-  loadn R3 #0
-  cmp R5, R3
-  jne rightSideChase ; if side == 1 (right side)
-
-  ; playerCoord mod 40 (y axis) has to be equal or lesser than mobCoord mod 40
-  ; rightSideChase
+  ; playerCoord mod 40 (x axis) has to be equal or lesser than mobCoord mod 40
+  ; leftSideChase
   cmp R4, R3 
   jgr chaseFalse
   jel calculateDistance
 
   rightSideChase:
-    ; playerCoord mod 40 (y axis) has to be equal or greater than mobCoord mod 40
+    ; sees if player is at right side of mob
+    loadn R2, #6
+    add R3, R2, R0 ; addr to mobCoord
+    loadi R3, R3 ; mob Coord
+    loadn R2, #40
+
+    ; finds x axis coord
+    mod R3, R3, R2 ; mobCoord mod 40
+    mod R4, R1, R2 ; playerCoordMap mod 40
+
+    ; playerCoord mod 40 (x axis) has to be equal or greater than mobCoord mod 40
     cmp R4, R3 
     jle chaseFalse
-    
 
   calculateDistance:
     ; calculates distance
@@ -514,14 +540,14 @@ chaseCondition:
 
     ; d = max(|x2-x1|, |y2-y1|) + 0.5*min(|x2-x2, |y2-y1|)
     ; test which x is bigger and do subtraction
-    cmp R4, R5
+    cmp R4, R6
     jle mobXgreater
 
-    sub R4, R4, R5
+    sub R4, R4, R6
     jmp testYcoord
 
     mobXgreater:
-      sub R4, R5, R4
+      sub R4, R6, R4
 
     ; test which y is bigger and do subtraction
     testYcoord:
@@ -548,14 +574,15 @@ chaseCondition:
     ; divides the smller by two and adds to the bigger
     distYgreater:
       div R4, R4, R5
-      add R3, R4 R3 ; this is our approximated distance
+      add R3, R4, R3 ; this is our approximated distance
 
     checkPlayerStealth:
     ; if not, distance <= 15
     ; if yes, distance <= 4
+    ; R3 has distance
     load R2, playerProp ; stealth prop
-    loadn R3, #1
-    cmp R2, R3
+    loadn R5, #1
+    cmp R2, R5
     jne chaseNotStealth ; if 0, jmp, not stealth
 
     loadn R2, #4
@@ -577,9 +604,6 @@ chaseCondition:
   chaseTrue:
     loadn R2, #1 ; this is chase bool false
     rts
-
-
-
 
 
 DelayMove:
@@ -624,7 +648,7 @@ restoreDelay:
   push R1
 
   ; must be stored only if playerMove succeded
-  loadn R1, #10
+  loadn R1, #1
   loadn R0, #65000
   store delayPlayerMove2,  R0
   store delayPlayerMove1, R1
@@ -1249,10 +1273,10 @@ playerProp: var #1
   static playerProp, #0 ; stealth
 
 playerCoordRender: var #1
-  static playerCoordRender, #83
+  static playerCoordRender, #750
 
 playerCoordInMap: var #1
-  static playerCoordInMap, #83
+  static playerCoordInMap, #750
 
 delayPlayerMove1: var #1
   static delayPlayerMove1, #0
@@ -1274,7 +1298,7 @@ skinPlayerFrontStop: var #4
   static skinPlayerFrontStop + #2, #2307 ; right leg
   static skinPlayerFrontStop + #3, #2308 ; left leg
 
-mob1: var #10
+mob1: var #12
   static mob1 + #0, #0 ; if it's active or not
   static mob1 + #1, #2822 ; left face skin
   static mob1 + #2, #2823 ; right face skin
@@ -1285,7 +1309,7 @@ mob1: var #10
   static mob1 + #7, #0 ; chase bool
   static mob1 + #8, #0 ; alert bool
   static mob1 + #9, #1 ; side that mob is looking at, 0 for left, 1 for right
-  static mob1 + #10, #1000 ; delay mobMove1 
+  static mob1 + #10, #50 ; delay mobMove1 
   static mob1 + #11, #65000 ; delay mobMove2
 
 
