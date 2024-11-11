@@ -1,4 +1,4 @@
-call testLevel
+call levelMain
 
 call render
 call renderPlayer
@@ -9,6 +9,169 @@ inGame:
   call DelayMove
   call mobMain
   jmp inGame
+
+; selects level to be loaded
+levelMain:
+  push R0
+  push R1
+
+  load R0, curLevel ; takes curLevel number
+  loadn R1, #1
+  cmp R0, R1
+  jne testLevel2
+  call loadLevel1
+  
+  jmp levelMainFinish
+
+  testLevel2:
+
+  levelMainFinish:
+    pop R1
+    pop R0
+    rts
+
+
+loadLevel1:
+  push R0
+  push R1
+  push R2
+
+  ; player things
+  loadn R0, #playerCoordRender
+  loadn R1, #750
+  storei R0, R1 ; stores coord 750 in player render
+
+  inc R0
+  storei R0, R1 ; stores coord 750 in player map
+
+  ; render things
+  loadn R0, #renderVar
+  loadn R1, #0   ;#480
+  storei R0, R1 ; stores render min cord as 480
+
+  inc R0
+  loadn R1, #1200   ;#1680
+  storei R0, R1 ; stores max coord as 1680
+
+  ; restars slideCounter
+  loadn R0, #slideCounter
+  loadn R1, #20000
+  storei R0, R1
+  inc R0
+  loadn R1, #65000
+  storei R0, R1
+
+  ; mob things
+  loadn R0, #mob1
+  loadn R1, #1
+  storei R0, R1 ; activates mob1
+
+  loadn R1, #6
+  add R1, R1, R0 ; addr to mapCoord of mob
+  loadn R2, #841 
+  storei R1, R2 ; coord now 841
+
+  inc R1 ; addr to chase bool
+  loadn R2, #0
+  storei R1, R2 ; restarts chase bool
+  inc R1
+  storei R1, R2 ; restarts alert bool
+
+  inc R1   ; addr to side mob is facing
+  loadn R2, #1
+  storei R1, R2 ; stores 1 (facing right)
+
+  loadn R1, #12
+  add R1, R1, R0 ; addr to script number
+  loadn R2, #1
+  storei R1, R2 ; stores script 1
+
+  ; slides map from bottom to top
+  ;call levelSlide
+
+; ADDD POP PUSH
+  pop R2
+  pop R1
+  pop R0
+  rts
+
+
+; will slide map from bottom to top
+levelSlide:
+  push R0
+  push R1
+  push R2
+  push R3
+  push R4
+  push R5
+
+  ; checks delay
+  loadn R0, #slideCounter ; addr to first counter
+  mov R1, R0
+  inc R1 ; addr to second counter
+
+  loadi R2, R1 ; R2 = second counter value
+  loadn R5, #0
+  cmp R2, R5 ; if 0, test first counter, else, dec second counter
+  jeq levelSlideTestFirstCounter
+
+  dec R2
+  storei R1, R2
+  jmp levelSlideFinish
+
+  levelSlideTestFirstCounter:
+    loadi R3, R0 ; R3 = first counter value
+    cmp R3, R5 ; if 0, var = true, restore both counters
+               ; else, dec counter 1 and restore counter 2
+    jne levelSlideTestFirstNot0
+
+    ; if 0
+    loadn R4, #65000 ; stores to 2nd counter
+    storei R1, R4
+    loadn R4, #2000 ; stores to 1st counter
+    storei R0, R4
+    
+    jmp levelSlideStartLoop
+
+    levelSlideTestFirstNot0:
+      dec R3
+      storei R0, R3 ; decs first counter
+
+      loadn R4, #65000 ; stores to 2nd counter
+      storei R1, R4
+      jmp levelSlideFinish
+
+
+  levelSlideStartLoop:  
+    loadn R0, #renderVar
+    mov R1, R0
+    inc R1 ; addr to max coord to be rendered
+    loadi R2, R0 ; min coord rendered
+    loadi R3, R1 ; max coord rendered
+    loadn R4, #40 ; 40 will be subed from coords
+    loadn R5, #0 ; to be used as case base
+
+    levelSlideLoop:
+      call render
+      call mobMain
+
+      sub R2, R2, R4
+      storei R0, R2 ; subs 40 to min coord to be rendered
+
+      sub R3, R3, R4 ; subs 40 to max coord to be rendered
+      storei R1, R3
+
+      cmp R2, R5
+      jne levelSlideLoop
+
+  levelSlideFinish:
+    pop R5
+    pop R4
+    pop R3
+    pop R2
+    pop R1
+    pop R0
+    rts
 
 ; loads configs for testing
 testLevel:
@@ -44,6 +207,8 @@ mobMain:
     loadn R0, #mob1 ; will be used for various instructions, 
                     ; should not be changed inside of them
     call behaveMob
+    call renderExclaInter
+    call mobMovement
 
   checkActiveMob2:
 
@@ -168,10 +333,7 @@ behaveMob:
       
       ; store script chase
 
-      ; render exclamation
-      call renderExclaInter
       jmp behaveMobFinish ; finish
-
 
     conditionChaseFalse:
       loadn R2, #7
@@ -184,7 +346,6 @@ behaveMob:
       storei R2, R4 ;
       inc R2 ; addr to alert bool
       storei R2, R3 ; stores 0 to chaseBool and 1 to alertBool
-      call renderExclaInter ; renders interrogation
 
       ; STORE SCRIPT ALERT!!!!!!!!!!!!
 
@@ -212,6 +373,252 @@ behaveMob:
     pop R2
     pop R1
     rts
+
+; will use R0 as addr of mob
+mobMovement:
+  push R1
+  push R2
+  push R3
+
+  loadn R1, #1
+  loadn R3, #7
+  add R3, R3, R0 ; addr of chase bool
+  loadi R2, R3
+  cmp R2, R1 ; if chase bool = 1, script chase
+             ; else, test alert
+  jne mobMovementAlertTest
+
+  ; CHASE SCRIPT HERE
+
+  mobMovementAlertTest:
+    inc R3 ; addr of alert bool
+    loadi R2, R3
+    cmp R2, R1 ; if alert bool = 1, script alert
+               ;else, scriptMain
+    jne mobMovementScriptMain
+
+    ; ALERT SCRIPT HERE
+
+  mobMovementScriptMain:
+    call scriptMain
+
+  ;FINISHHHHH
+  pop R3
+  pop R2
+  pop R1
+  rts
+
+
+; will use R0 as addr of mob
+scriptMain:
+  push R1
+  push R2
+  push R3
+  push R4
+  push R5
+  push R6
+
+  loadn R2, #5
+  add R2, R2, R0 ; addr of mob coord
+  
+  ; reads script number of mob
+  loadn R1, #12
+  add R1, R1, R0
+  loadi R1, R1
+
+  loadn R3, #0
+  cmp R1, R3
+  jne scriptMainTest1
+  ; 0 does nothing
+  jmp scriptMainFinish
+
+  ;scriptMainTest
+  scriptMainTest1:
+    loadn R3, #1
+    cmp R1, R3
+    jne scriptMainTest2
+
+    loadn R3, #script1 ; R3 will hold addr of script!!! 
+    jmp scriptMainAction
+
+  scriptMainTest2:
+    ; to be updated
+
+
+  ; R3 must be addr of script
+  scriptMainAction:
+    loadi R4, R3 ; reads phase number
+
+    ; check if we reached the end (script[1 + 2*phaseNum] == 0)
+    loadn R5, #2
+    mul R4, R4, R5
+    inc R4
+    add R6, R3, R4 ; R6 = addr script[1+2*phaseNum]
+    loadi R4, R6 ; R4 = script[1+2*phaseNum]
+
+    loadn R5, #0
+    cmp R4, R5 ; if == 0, phaseNum = 0
+    jeq scriptMainLastPhase
+
+    ; R3 = script1 addr
+    ; R2 = addr of mob coord
+    ; R4 = script[1+2*phaseNum]
+    call mobMoveChoice
+    loadi R2, R2 ; new value of mobCoord
+    cmp R2, R4
+    jne scriptMainFinish ; if mob coord == script[1 + 2*phasenum] 
+                         ; we've reached our destintion, inc 1 to sscript[0]
+    inc R4 ; next phase
+    storei R3, R4
+
+    jmp scriptMainFinish
+  
+  ; R3 must be addr of script
+  scriptMainLastPhase:
+    loadn R4, #0
+    storei R3, R4 ; restarts num phase
+
+    jmp scriptMainFinish
+
+  scriptMainFinish:
+    pop R6
+    pop R5
+    pop R4
+    pop R3
+    pop R2
+    pop R1
+    rts
+
+; will use R3 as script addr and
+; R0 as mob addr
+; R6 = addr script[1+2*phaseNum]
+mobMoveChoice:
+  push R1
+  push R2
+  push R3
+  push R4
+  push R5
+  push R6
+  
+  
+  inc R6 ; addr to side order
+  loadi R1, R6
+
+  loadn R2, #'r'
+  cmp R1, R2 ; if true, move right
+  jeq mobMoveRight
+
+  loadn R2, #'l'
+  cmp R1, R2 ; if true, move left
+  jeq mobMoveLeft
+
+  loadn R2, #'d'
+  cmp R1, R2 ; if true, move down
+  jeq mobMoveDown
+
+  loadn R2, #'u'
+  cmp R1, R2 ; if true, move up
+  jeq mobMoveUp
+
+  jmp mobMoveChoiceFinish
+
+
+  mobMoveRight:
+    loadn R2, #6
+    add R2, R2, R0 ; addr to mapcoord
+    loadi R1, R2
+    inc R1 ; 1 pix to the right, mob's head
+
+    ; if (mob's head + 1) mod 40 == 0, do nothing
+    mov R3, R1
+    inc R3
+    loadn R4, #40
+    mod R3, R3, R4 ; (mob's head + 1) mod 40
+
+    loadn R4, #0
+    cmp R3, R4 ; if == 0, finish
+    jeq mobMoveChoiceFinish
+
+    ; update map coord
+    loadi R3, R2
+    inc R3 ; +1 mapcoord
+    storei R2, R3
+
+    jmp mobMoveChoiceFinish
+  
+  mobMoveLeft:
+    loadn R2, #6
+    add R2, R2, R0 ; addr to mapcoord
+    loadi R1, R2
+    dec R1 ; 1 pix to the left, mob's head
+
+    ; if (mob's head) mod 40 == 0, do nothing
+    loadn R4, #40
+    mod R1, R1, R4 ; (mob's head) mod 40
+
+    loadn R4, #0
+    cmp R1, R4 ; if == 0, finish
+    jeq mobMoveChoiceFinish
+
+    ; update map coord
+    loadi R3, R2
+    dec R3 ; -1 mapcoord
+    storei R2, R3
+
+    ; update side facing
+    inc R2
+    inc R2
+    inc R2 ; addr to side
+    loadn R3, #0 ; facing left
+    storei R2, R3
+
+    jmp mobMoveChoiceFinish
+
+  mobMoveDown:
+    loadn R2, #6
+    add R2, R2, R0 ; addr to mapcoord
+    loadi R1, R2
+
+    ; if coord > 1639, do nothing
+    loadn R4, #1639
+    cmp R1, R4
+    jgr mobMoveChoiceFinish
+
+    ; update map coord
+    loadi R3, R2
+    loadn R4, #40
+    add R3, R3, R4; +40 mapcoord
+    storei R2, R3
+
+    jmp mobMoveChoiceFinish
+
+  mobMoveUp:
+    loadn R2, #6
+    add R2, R2, R0 ; addr to mapcoord
+    loadi R1, R2
+
+    ; if coord < 40, do nothing
+    loadn R4, #40
+    cmp R1, R4
+    jle mobMoveChoiceFinish
+
+    ; update map coord
+    loadi R3, R2
+    sub R3, R3, R4; -40 mapcoord
+    storei R2, R3
+
+    jmp mobMoveChoiceFinish
+
+
+  mobMoveChoiceFinish:
+    pop R6
+    pop R5
+    pop R4
+    pop R3
+    pop R2
+    pop R1
+    rts
+
 
 ; R0 will be used as addr to chosen mob
 delayMobAlert:
@@ -522,6 +929,7 @@ chaseCondition:
     ; finds x axis coord
     mod R3, R3, R2 ; mobCoord mod 40
     mod R4, R1, R2 ; playerCoordMap mod 40
+    inc R4
 
     ; playerCoord mod 40 (x axis) has to be equal or greater than mobCoord mod 40
     cmp R4, R3 
@@ -1285,12 +1693,6 @@ delayPlayerMove2: var #1
   static delayPlayerMove2, #0
 
 
-; skins will divided between 1. mob
-;                            |_ 2: act
-;                               |_ 3: sub-act
-;                                  |_ 4: position
-;                                     |_ 5: quadrant
-
 ; player skins
 skinPlayerFrontStop: var #4
   static skinPlayerFrontStop + #0, #2305 ; left face
@@ -1298,7 +1700,7 @@ skinPlayerFrontStop: var #4
   static skinPlayerFrontStop + #2, #2307 ; right leg
   static skinPlayerFrontStop + #3, #2308 ; left leg
 
-mob1: var #12
+mob1: var #13
   static mob1 + #0, #0 ; if it's active or not
   static mob1 + #1, #2822 ; left face skin
   static mob1 + #2, #2823 ; right face skin
@@ -1311,8 +1713,26 @@ mob1: var #12
   static mob1 + #9, #1 ; side that mob is looking at, 0 for left, 1 for right
   static mob1 + #10, #50 ; delay mobMove1 
   static mob1 + #11, #65000 ; delay mobMove2
+  static mob1 + #12, #0 ; number of script
 
 
+; starts at 841
+script1: var #6
+  static script1 + #0, #0 ; phase number
+  static script1 + #1, #877
+  static script1 + #2, #'r' ; right
+  static script1 + #3, #841
+  static script1 + #4, #'l' ; left
+  static script1 + #5, #0
+
+
+curLevel: var #1
+  static curLevel, #1
+
+; for slide of begginning of level
+slideCounter: var #2
+  static slideCounter + #0, #20000
+  static slideCounter + #1, #65000
 
 
 ; stores min and max coord to be rendered
