@@ -68,7 +68,7 @@ loadLevel1:
 
   loadn R1, #6
   add R1, R1, R0 ; addr to mapCoord of mob
-  loadn R2, #841 
+  loadn R2, #841
   storei R1, R2 ; coord now 841
 
   inc R1 ; addr to chase bool
@@ -206,9 +206,9 @@ mobMain:
 
     loadn R0, #mob1 ; will be used for various instructions, 
                     ; should not be changed inside of them
+    call mobMovement
     call behaveMob
     call renderExclaInter
-    call mobMovement
 
   checkActiveMob2:
 
@@ -225,91 +225,6 @@ behaveMob:
   push R5
   push R6
   push R7
-
-  ; R0 will be determined before routine call as the mob addr to be behaved
-  loadn R5, #renderVar
-
-  ; check if coord right to render 
-  ; checks first y
-  checkRenderUpperMob1:
-    loadn R7, #6
-    add R1, R0, R7 ; addr of mapCoord
-    loadi R1, R1 ; mapCoord of mob
-
-    loadi R2, R5 ; min render coord
-    cmp R1, R2 ; check if upper part coord is greater  or equal than min renderCoord
-    jle checkRenderLowerMob1
-
-    ; now checking max renderCoord
-    inc R5
-    loadi R2, R5
-    cmp R1, R2 ; check if mapCoord lesser than maxCoord (exclusive)
-    jeg checkRenderLowerMob1
-
-      ; renders upper part of mob
-      mov R3, R0
-      inc R3 ; addr to first skin
-      loadi R4, R3 ; R4 has skin
-
-      ; using R0, R1, R2, R3, R5
-      ; R1 has coordinMap, R2 has max render coord, R4 has skin
-      ; renders left face
-      load R2, renderVar ; R2 now has min coord render
-      sub R6, R1, R2 ; has to render in coord (mapCoord - minRenderVar)
-      outchar R4, R6
-
-      ; renders right face
-      inc R3
-      loadi R4, R3 ; right face skin
-      inc R6 ; increments render coord
-      outchar R4, R6
-      
-      ; renders wings
-      inc R3
-      inc R3
-      inc R3 ; addr to wings skin
-      loadi R4, R3 ; has wing skin
-      dec R6
-      dec R6 ; wing render coord
-      outchar R4, R6
-
-  checkRenderLowerMob1:
-    ; R0 = addr of mob1, R1 = mapCoord, R3 = addr first skin
-    loadn R5, #renderVar
-    loadn R7, #40
-    add R1, R1, R7 ; getting coord of lower part
-
-
-    loadi R2, R5 ; min render coord
-    cmp R1, R2 ; check if lower part coord is greater or equal than min renderCoord
-    jle checkChaseBool ; CHANGE THIS LATER!!!!!!!!!!!!!!!!!!
-
-    ; now checking max renderCoord
-    inc R5
-    loadi R2, R5
-    cmp R1, R2 ; check if mapCoord lesser than maxCoord (exclusive)
-    jeg checkChaseBool  ; CHANGE THIS LATER!!!!!!!!!!!!!!!!!!
-
-      ; renders lower part of mob
-        mov R3, R0
-        inc R3
-        inc R3
-        inc R3 ; addr to left leg skin
-        loadi R4, R3 ; R4 has skin
-
-        ; using R0, R1, R2, R3, R5
-        ; R1 has coordinMap of left leg, R2 has max render coord, R4 has skin
-        ; renders left leg
-        load R2, renderVar ; R2 now has min coord render
-        sub R6, R1, R2 ; has to render in coord (mapCoord - minRenderVar)
-        outchar R4, R6
-
-        ; renders right leg
-        inc R3
-        loadi R4, R3 ; right face skin
-        inc R6 ; increments render coord
-        outchar R4, R6
-
 
   ; checks chaseCondition not chaseBool
   checkChaseBool:
@@ -402,7 +317,6 @@ mobMovement:
   mobMovementScriptMain:
     call scriptMain
 
-  ;FINISHHHHH
   pop R3
   pop R2
   pop R1
@@ -418,7 +332,7 @@ scriptMain:
   push R5
   push R6
 
-  loadn R2, #5
+  loadn R2, #6
   add R2, R2, R0 ; addr of mob coord
   
   ; reads script number of mob
@@ -430,7 +344,7 @@ scriptMain:
   cmp R1, R3
   jne scriptMainTest1
   ; 0 does nothing
-  jmp scriptMainFinish
+  jmp checkRenderUpperMob1
 
   ;scriptMainTest
   scriptMainTest1:
@@ -466,21 +380,105 @@ scriptMain:
     call mobMoveChoice
     loadi R2, R2 ; new value of mobCoord
     cmp R2, R4
-    jne scriptMainFinish ; if mob coord == script[1 + 2*phasenum] 
+    jne checkRenderUpperMob1 ; if mob coord == script[1 + 2*phasenum] 
                          ; we've reached our destintion, inc 1 to sscript[0]
-    inc R4 ; next phase
+    loadi R4, R3
+    inc R4 ; loads script[0] inc and stores it
     storei R3, R4
 
-    jmp scriptMainFinish
+    jmp checkRenderUpperMob1
   
   ; R3 must be addr of script
   scriptMainLastPhase:
     loadn R4, #0
     storei R3, R4 ; restarts num phase
 
-    jmp scriptMainFinish
+    jmp checkRenderUpperMob1
+  
+  ; check if coord right to render 
+  ; checks first y
+  checkRenderUpperMob1:
+    loadn R5, #renderVar
+    
+    loadn R7, #6
+    add R1, R0, R7 ; addr of mapCoord
+    loadi R1, R1 ; mapCoord of mob
 
-  scriptMainFinish:
+    loadi R2, R5 ; min render coord
+    cmp R1, R2 ; check if upper part coord is greater  or equal than min renderCoord
+    jle checkRenderLowerMob1
+
+    ; now checking max renderCoord
+    inc R5
+    loadi R2, R5
+    cmp R1, R2 ; check if mapCoord lesser than maxCoord (exclusive)
+    jeg checkRenderLowerMob1
+
+      ; renders upper part of mob
+      mov R3, R0
+      inc R3 ; addr to first skin
+      loadi R4, R3 ; R4 has skin
+
+      ; using R0, R1, R2, R3, R5
+      ; R1 has coordinMap, R2 has max render coord, R4 has skin
+      ; renders left face
+      load R2, renderVar ; R2 now has min coord render
+      sub R6, R1, R2 ; has to render in coord (mapCoord - minRenderVar)
+      outchar R4, R6
+
+      ; renders right face
+      inc R3
+      loadi R4, R3 ; right face skin
+      inc R6 ; increments render coord
+      outchar R4, R6
+      
+      ; renders wings
+      inc R3
+      inc R3
+      inc R3 ; addr to wings skin
+      loadi R4, R3 ; has wing skin
+      dec R6
+      dec R6 ; wing render coord
+      outchar R4, R6
+
+  checkRenderLowerMob1:
+    ; R0 = addr of mob1, R1 = mapCoord, R3 = addr first skin
+    loadn R5, #renderVar
+    loadn R7, #40
+    add R1, R1, R7 ; getting coord of lower part
+
+
+    loadi R2, R5 ; min render coord
+    cmp R1, R2 ; check if lower part coord is greater or equal than min renderCoord
+    jle checkChaseBool ; CHANGE THIS LATER!!!!!!!!!!!!!!!!!!
+
+    ; now checking max renderCoord
+    inc R5
+    loadi R2, R5
+    cmp R1, R2 ; check if mapCoord lesser than maxCoord (exclusive)
+    jeg checkChaseBool  ; CHANGE THIS LATER!!!!!!!!!!!!!!!!!!
+
+      ; renders lower part of mob
+        mov R3, R0
+        inc R3
+        inc R3
+        inc R3 ; addr to left leg skin
+        loadi R4, R3 ; R4 has skin
+
+        ; using R0, R1, R2, R3, R5
+        ; R1 has coordinMap of left leg, R2 has max render coord, R4 has skin
+        ; renders left leg
+        load R2, renderVar ; R2 now has min coord render
+        sub R6, R1, R2 ; has to render in coord (mapCoord - minRenderVar)
+        outchar R4, R6
+
+        ; renders right leg
+        inc R3
+        loadi R4, R3 ; right face skin
+        inc R6 ; increments render coord
+        outchar R4, R6
+
+  checkRenderUpperMob1:
     pop R6
     pop R5
     pop R4
@@ -499,9 +497,16 @@ mobMoveChoice:
   push R4
   push R5
   push R6
+  push R7
   
+  ; checks delay
+  call delayMoveMob ; will return bool in R2
+  loadn R1, #0
+  cmp R2, R1 ; if == 0, finish
+             ; else, continue
+  jeq mobMoveChoiceFinish
   
-  inc R6 ; addr to side order
+  inc R6 ; addr to side to move
   loadi R1, R6
 
   loadn R2, #'r'
@@ -522,8 +527,13 @@ mobMoveChoice:
 
   jmp mobMoveChoiceFinish
 
-
   mobMoveRight:
+  ; stores right side
+    loadn R1, #9
+    add R1, R1, R0 ; addr to side mob
+    loadn R2, #1
+    storei R1, R2 ; stores 1 to side val (right)
+
     loadn R2, #6
     add R2, R2, R0 ; addr to mapcoord
     loadi R1, R2
@@ -540,13 +550,88 @@ mobMoveChoice:
     jeq mobMoveChoiceFinish
 
     ; update map coord
+    call renderSymbolBackground ; unrender symbol chase/alert
     loadi R3, R2
     inc R3 ; +1 mapcoord
     storei R2, R3
 
+    mobMoveRightTestUpper:
+      ; restore background
+      loadn R5, #renderVar
+      loadi R4, R5 ; map coord must greater than min var render
+
+      loadi R3, R2 ; mob coord
+      dec R3
+      dec R3 ; coord of where wings were
+      cmp R3, R4 ; if equal or greater, test maxCoord
+                ; else, test lower part
+      jle mobMoveRightTestLower
+
+      inc R5 ; addr to max coord
+      loadi R4, R5
+      cmp R3, R4 ; if lesser, render background
+                ; else, test lower part
+      jeg mobMoveRightTestLower
+
+      ; restores upper background 
+      loadn R6, #mapTotal
+      add R6, R3, R6
+      loadi R6, R6 ; pix info
+
+      dec R5 ; addr min renderVar
+      loadi R4, R5 ; min rendervar
+      sub R4, R3, R4 ; coordRender
+
+      outchar R6, R4
+
+    mobMoveRightTestLower:
+    ; tests lower part
+    ; R5 = addr to min coord render
+    ; R3 = past mapcoords of wings
+    loadn R5, #renderVar
+
+    loadn R2, #6
+    add R2, R2, R0 ; addr to mobcoord
+    loadi R3, R2
+
+    loadn R6, #38
+    add R3, R3, R6 ; left of left leg
+    loadi R4, R5
+    cmp R3, R4 ; if equal or greater, test maxCoord
+               ; else, do nothing
+    jle mobMoveChoiceFinish
+
+    inc R5 ; addr to max rendervar
+    loadi R4, R5
+    cmp R3, R4 ; if lesser, render background
+               ; else, do nothing
+    jeg mobMoveChoiceFinish
+
+    ; renders lower part
+    dec R5 ; addr to min rendervar
+    loadi R4, R5
+    loadn R6, #mapTotal
+    add R6, R3, R6 ; addr to pix info
+    loadi R7, R6 ; pix info
+
+    sub R5, R3, R4 ; coord in render
+    outchar R7, R5
+
+    ; next pix to the right
+    inc R6
+    loadi R7, R6 ; pix info
+    inc R5 ; next coord in render
+    outchar R7, R5
+
     jmp mobMoveChoiceFinish
   
   mobMoveLeft:
+  ; stores left side
+    loadn R1, #9
+    add R1, R1, R0 ; addr to side mob
+    loadn R2, #0
+    storei R1, R2 ; stores 1 to side val (right)
+
     loadn R2, #6
     add R2, R2, R0 ; addr to mapcoord
     loadi R1, R2
@@ -561,18 +646,80 @@ mobMoveChoice:
     jeq mobMoveChoiceFinish
 
     ; update map coord
+    call renderSymbolBackground ; unrender symbol chase/alert
     loadi R3, R2
     dec R3 ; -1 mapcoord
     storei R2, R3
 
-    ; update side facing
-    inc R2
-    inc R2
-    inc R2 ; addr to side
-    loadn R3, #0 ; facing left
-    storei R2, R3
+    ; restore background
+    loadn R5, #renderVar
+    loadi R4, R5 ; map coord must equal or  greater than min var render
+    
+    loadn R2, #6
+    add R2, R2, R0 ; addr to mapcoord
+    loadi R3, R2
+    inc R3
+    inc R3 ; coord of where wings were
+    
+    cmp R3, R4 ; if equal or greater, test maxCoord
+               ; else, test lower part
+    jle mobMoveLeftTestLower
 
-    jmp mobMoveChoiceFinish
+    inc R5 ; addr to max coord
+    loadi R4, R5
+    cmp R3, R4 ; if lesser, render background
+               ; else, test lower part
+    jeg mobMoveLeftTestLower
+
+    ; restores upper background 
+    loadn R6, #mapTotal
+    add R6, R3, R6
+    loadi R6, R6 ; pix info
+
+    dec R5 ; addr min renderVar
+    loadi R4, R5 ; min rendervar
+    sub R4, R3, R4 ; coordRender
+
+    outchar R6, R4
+
+    mobMoveLeftTestLower:
+      ; tests lower part
+      loadn R5, #renderVar
+      
+      loadn R2, #6
+      add R2, R2, R0 ; addr to mobcoord
+      loadi R3, R2      
+      
+      loadn R6, #42
+      add R3, R3, R6 ; right of right leg
+      loadi R4, R5
+      cmp R3, R4 ; if equal or greater, test maxCoord
+                ; else, do nothing
+      jle mobMoveChoiceFinish
+
+      inc R5 ; addr to max rendervar
+      loadi R4, R5
+      cmp R3, R4 ; if lesser, render background
+                ; else, do nothing
+      jeg mobMoveChoiceFinish
+
+      ; renders lower part
+      loadn R6, #mapTotal
+      add R6, R3, R6
+      loadi R7, R6 ; pix info
+      
+      dec R5 ; addr to minrendervar
+      loadi R4, R5
+      sub R3, R3, R4 ; coordrender
+      outchar R7, R3
+
+      ; pix to the left
+      dec R6 ; mapTotal index
+      loadi R7, R6
+      dec R3 ; renderCoord
+      outchar R7, R3
+
+      jmp mobMoveChoiceFinish
 
   mobMoveDown:
     loadn R2, #6
@@ -585,12 +732,58 @@ mobMoveChoice:
     jgr mobMoveChoiceFinish
 
     ; update map coord
+    call renderSymbolBackground ; unrender symbol chase/alert
     loadi R3, R2
     loadn R4, #40
     add R3, R3, R4; +40 mapcoord
     storei R2, R3
 
-    jmp mobMoveChoiceFinish
+    ; restore background
+    loadn R5, #renderVar
+    loadi R4, R5 ; map coord must equal or  greater than min var render
+    
+    loadn R4, #40
+    sub R3, R3, R4 ; past mob coord
+    
+    cmp R3, R4 ; if equal or greater, test maxCoord
+               ; else, finish
+    jle mobMoveChoiceFinish
+
+    inc R5 ; addr to max coord
+    loadi R4, R5
+    cmp R3, R4 ; if lesser, render background
+               ; else, finish
+    jeg mobMoveChoiceFinish
+
+    ; restores upper background 
+    loadn R6, #mapTotal
+    add R6, R3, R6 ; addr of pix info
+    loadi R7, R6 ; pix info
+
+    dec R5 ; addr min renderVar
+    loadi R4, R5 ; min rendervar
+    sub R4, R3, R4 ; coordRender
+    outchar R7, R4
+
+    ; 1 pix left
+    dec R6
+    loadi R7, R6 ; pix info
+    dec R3 ; 1 pix left
+    loadi R4, R5 ; min rendervar
+    sub R4, R3, R4 ; coord to render
+    outchar R7, R4
+
+    ; 1 pix to the right of first
+    inc R6
+    inc R6 ; addr to pix info
+    loadi R7, R6
+    inc R3
+    inc R3 ; coord in map
+    loadi R4, R5 ; min rendervar
+    sub R4, R3, R4
+    outchar R7, R4
+
+    jmp mobMoveChoiceFinish    
 
   mobMoveUp:
     loadn R2, #6
@@ -603,14 +796,150 @@ mobMoveChoice:
     jle mobMoveChoiceFinish
 
     ; update map coord
+    call renderSymbolBackground ; unrender symbol chase/alert
     loadi R3, R2
     sub R3, R3, R4; -40 mapcoord
     storei R2, R3
 
-    jmp mobMoveChoiceFinish
+    ; test side to restore background
+    loadn R4, #3
+    add R1, R2, R4 ; addr to side
+    loadi R1, R1
+
+    loadn R4, #0
+    cmp R1, R4 ; if not equal, restore right
+    jne mobMoveUpRestoreRight
+
+    ; test render coords
+    loadn R1, #renderVar
+    loadi R4, R1 ; min renderVar
+    cmp R3, R4 ; must be equal or greater
+               ; else, test lower part
+    jle mobMoveUpRestoreLeftTestLower
+
+    inc R1
+    loadi R4, R1 ; max renderVar
+    cmp R3, R4 ; must be lesser
+               ; else, test lower part
+    jeg mobMoveUpRestoreLeftTestLower
+
+    ; restores upper part side left
+    dec R1
+    loadi R4, R1 ; min rendervar
+
+    inc R3 ; past coords of wings
+    loadn R5, #mapTotal
+    add R5, R3, R5 ; addr to pix info
+    loadi R6, R5 ; pix info
+    sub R7, R3, R4 ; mapcoord - minRenderVar
+    outchar R6, R7
+
+    mobMoveUpRestoreLeftTestLower:
+      loadn R2, #renderVar
+      loadi R1, R2
+
+      loadn R3, #6
+      add R3, R3, R0
+      loadi R3, R3 ; mob coord
+      loadn R4, #80
+      add R3, R3, R4 ; past coord of right foot
+      cmp R3, R1 ; must be equal pr greater than min coord
+                 ; else finish
+      jle mobMoveChoiceFinish
+
+      inc R2
+      loadi R1, R2 ; max rendervar
+      cmp R3, R1 ; must be lesser than max coord
+                 ; else, finish
+      jeg mobMoveChoiceFinish
+
+      ; renders lower part
+      loadn R4, #mapTotal
+      add R4, R3, R4 ; addr to pix info
+      loadi R5, R4 ; pix info
+      dec R2
+      loadi R1, R2 ; min rendervar
+      sub R3, R3, R1 ; coord to be rendered
+      outchar R5, R3
+
+      ; next pix
+      dec R3 ; coord to be rendered
+      dec R4
+      loadi R5, R4 ; pix info
+      outchar R5, R3
+
+      jmp mobMoveChoiceFinish
+
+    mobMoveUpRestoreRight:
+      ; test render coords
+      loadn R1, #renderVar
+      loadi R4, R1 ; min renderVar
+
+      loadn R2, #6
+      add R2, R2, R0 ; addr to mobcoord
+      loadi R3, R2 ; mob coord
+      loadn R5, #39
+      add R3, R3, R5 ; past coord of wings
+
+      cmp R3, R4 ; must be equal or greater
+                 ; else, testlower
+      jle mobMoveUpRestoreRightTestLower
+
+      inc R1
+      loadi R4, R1 ; max renderVar
+      cmp R3, R4 ; must be lesser
+                 ; else, testlower
+      jeg mobMoveUpRestoreRightTestLower
+
+      ; restores upper part side left
+      dec R1
+      loadi R4, R1 ; min rendervar
+
+      loadn R5, #mapTotal
+      add R5, R3, R5 ; addr to pix info
+      loadi R6, R5 ; pix info
+      sub R7, R3, R4 ; mapcoord - minRenderVar
+      outchar R6, R7
+
+      mobMoveUpRestoreRightTestLower:
+        loadn R2, #renderVar
+        loadi R1, R2
+
+        loadn R3, #6
+        add R3, R3, R0
+        loadi R3, R3 ; mob coord
+        loadn R4, #80
+        add R3, R3, R4 ; past coord of left foot
+        cmp R3, R1 ; must be equal or greater than min coord
+                   ; else finish
+        jle mobMoveChoiceFinish
+
+        inc R2
+        loadi R1, R2 ; max rendervar
+        cmp R3, R1 ; must be lesser than max coord
+                   ; else, finish
+        jeg mobMoveChoiceFinish
+
+        ; renders lower part
+        loadn R4, #mapTotal
+        add R4, R3, R4 ; addr to pix info
+        loadi R5, R4 ; pix info
+        dec R2
+        loadi R1, R2 ; min rendervar
+        sub R3, R3, R1 ; coord to be rendered
+        outchar R5, R3
+
+        ; next pix
+        inc R3 ; coord to be rendered
+        inc R4
+        loadi R5, R4 ; pix info
+        outchar R5, R3
+
+        jmp mobMoveChoiceFinish
 
 
   mobMoveChoiceFinish:
+    pop R7
     pop R6
     pop R5
     pop R4
@@ -618,6 +947,57 @@ mobMoveChoice:
     pop R2
     pop R1
     rts
+
+; will use R0 as mob addr
+delayMoveMob:
+  push R1
+  push R4
+
+  loadn R1, #11
+  add R1, R1, R0 ; addr to delay mobMove2
+  loadi R2, R1 ; delay mobMove2
+  loadn R4, #0
+  cmp R2, R4 ; check if timer2 = 0
+  jne delayMoveMobTimer2Not0
+
+  ; check if timer 1 = 0
+  dec R1
+  loadi R2, R1 ; delay mobMove1
+  cmp R2, R4
+  jne delayMoveMobTimer1Not0
+
+  loadn R4, #1 
+  storei R1, R4 ; stores 1 in timer 1
+  inc R1 ; addr to timer 2
+  loadn R4, #65000
+  storei R1, R4 ; stores 65000  in timer 2
+  loadn R2, #1 ; bool = true
+
+  jmp delayMoveMobFinish
+
+  delayMoveMobTimer1Not0:
+    dec R2
+    storei R1, R2 ; decrements and stores timer 1
+
+    inc R1 ; addr to timer 2
+    loadn R2, #65000
+    storei R1, R2 ; restores timer 2
+    loadn R2, #0 ; bool = false
+
+    jmp delayMoveMobFinish
+
+  delayMoveMobTimer2Not0:
+    dec R2
+    storei R1, R2
+    loadn R2, #0 ; bool = false
+
+    jmp delayMoveMobFinish
+
+  delayMoveMobFinish:
+    pop R4
+    pop R1
+    rts
+
 
 
 ; R0 will be used as addr to chosen mob
@@ -627,7 +1007,7 @@ delayMobAlert:
   push R3  
   push R4
   
-  loadn R1, #11
+  loadn R1, #14
   add R2, R1, R0 ; addr to timer 2
   loadi R1, R2 ; checks timer 2
   loadn R3, #0
@@ -652,9 +1032,8 @@ delayMobAlert:
     inc R2
     loadn R4, #65000
     storei R2, R4 ; stores 65000 to timer2
-    dec R2
-    dec R2 
-    dec R2 ; addr of alertBool
+    loadn R4, #6
+    sub R2, R2, R4 ; addr of alertBool
     storei R2, R3 ; stores 0 to alertBool
 
     ; unrenders inter
@@ -730,7 +1109,7 @@ renderExclaInter:
     inc R1 ; addr to alert bool
     loadi R2, R1 ; alert bool
     cmp R2, R3
-    jne renderExclaInterBackground ; if == 0, render pixel behid inter/exla
+    jne renderSymbolBackgroundCall ; if == 0, render pixel behid inter/exla
 
     dec R1
     dec R1 ; addr to coordInMap
@@ -750,136 +1129,10 @@ renderExclaInter:
     outchar R3, R2
 
     jmp renderExclaInterFinish
-
-    renderExclaInterBackground:
-      dec R1
-      dec R1 ; addr to coordInMap
-      loadi R1, R1 ; coord of mob in map
-      ; checks if mob not above 3rd line of render so excla/inter can be rendered
-      load R2, renderVar ; min var of render
-      sub R2, R1, R2 ; coord of mob in render
-      loadn R3, #79 ; last coord in 2nd line (1-indexed)
-                    ; mob coord has to be greater than this
-      cmp R2, R3
-      jel renderExclaInterFinish
-
-      ; actual rendering
-      inc R3 ; subs 2 in y axis (80)
-      sub R5, R1, R3 ; coord of excla/inter in map
-      ; check map prop
-      loadn R4, #1
-      cmp R5, R4 ; if mapProp = 1, render background
-      jeq renderExclaInterBackgroundBackground
-      inc R4
-      cmp R5, R4 ; if mapProp = 2, render background
-      jeq renderExclaInterBackgroundBackground
-      loadn R4, #0
-      cmp R5, R4 ; if mapProp = 0 
-                 ; if player in there, render player , else, render back
-                 ; else, test mapProp 3
-      jne renderExclaInterBackgroundTestMapProp3
-
-    ; R1 = mobCoord in map, R2 = mobCoord in render
-    ; R5 = excla/inter coord inMap
-      load R3, playerCoordInMap
-      cmp R5, R3 ; if symbol in same coord as player, render player
-                 ; else, test new coord
-      jne renderExclaInterBackgroundTestRightFace
-
-      ; if symbol is being tested, then it's already in a valid screen coord
-      load R3, playerCoordRender
-      loadn R4, #2305
-      outchar R4, R3 ; renders player left face
-      
-      jmp renderExclaInterFinish
-
-      renderExclaInterBackgroundTestRightFace:
-        inc R3
-        cmp R5, R3 ; if symbol in same coord as player, render player
-                   ; else, test new coord
-        jne renderExclaInterBackgroundTestRightLeg
-
-        ; if symbol is being tested, then it's already in a valid screen coord
-        load R3, playerCoordRender
-        inc R3
-        loadn R4, #2306
-        outchar R4, R3 ; renders player right face
-
-        jmp renderExclaInterFinish
-      
-      renderExclaInterBackgroundTestRightLeg:
-        loadn R4, #40
-        add R3, R3, R4 ; one down in y axis
-        cmp R5, R3 ; if symbol in same coord as player, render player
-                   ; else, test new coord
-        jne renderExclaInterBackgroundTestLeftLeg
-
-        ; if symbol is being tested, then it's already in a valid screen coord
-        load R3, playerCoordRender
-        inc R3
-        add R3, R3, R4 ; coord to render player
-        loadn R4, #2307
-        outchar R4, R3 ; renders player right face
-
-        jmp renderExclaInterFinish
-
-      renderExclaInterBackgroundTestLeftLeg:
-        dec R3 ; player left leg in map
-        cmp R5, R3 ; if symbol in same coord as player, render player
-                   ; else, test new coord
-        jne renderExclaInterBackgroundBackground
-
-        ; if symbol is being tested, then it's already in a valid screen coord
-        load R3, playerCoordRender
-        add R3, R3, R4 ; left leg player in render
-        loadn R4, #2308
-        outchar R4, R3 ; renders player right face
-
-        jmp renderExclaInterFinish
-
-      ; R1 = mobCoord in map, R2 = mobCoord in render
-      ; R5 = excla/inter coord inMap
-      ; if mapProp in symbol coord = 3 (flower stealth)
-      renderExclaInterBackgroundTestMapProp3:
-        load R3, playerCoordInMap
-        cmp R3, R5 ; if symbol in same coord as player, render player
-                   ; else if symbol in same coord as player +1, render player
-                   ; else, render background
-        jne renderExclaInterBackgroundTestMapProp3RightFace
-
-        ; renders left face
-        load R3, playerCoordRender
-        loadn R4, #2305
-        outchar R4, R3
-
-        jmp renderExclaInterFinish
-
-      renderExclaInterBackgroundTestMapProp3RightFace:
-        inc R3 ; player's right face coord in map
-        cmp R3, R5 ; if symbol in same coord as player, render player
-                   ; else if symbol in same coord as player +1, render player
-                   ; else, render background
-        jne renderExclaInterBackgroundBackground
-
-        ; renders right face
-        load R3, playerCoordRender
-        inc R3 ; coord of right face in render
-        loadn R4, #2306
-        outchar R4, R3
-
-        jmp renderExclaInterFinish
-      
-      ; R1 = mobCoord in map, R2 = mobCoord in render
-      ; R5 = excla/inter coord inMap
-      renderExclaInterBackgroundBackground:
-        loadn R3, #mapTotal
-        add R3, R3, R5 ; addr pixel info in map for background
-        loadi R3, R3 ; info for pixel
-        load R4, renderVar
-        sub R4, R5, R4 ; symbol coord in map - min render pixel = symbol coord in render
-                       ; R4 = symbol coord in render
-        outchar R3, R5
-
+    
+    renderSymbolBackgroundCall:
+      call renderSymbolBackground
+    
   renderExclaInterFinish:
     pop R5
     pop R4
@@ -887,6 +1140,167 @@ renderExclaInter:
     pop R2
     pop R1
     rts
+
+renderSymbolBackground:
+  push R1
+  push R2
+  push R3
+  push R4
+  push R5
+  push R6
+
+    loadn R1, #6
+    add R1, R1, R0 ; addr of map coord
+    loadi R2, R1
+    
+    ; checks if mob not above 3rd line of render so excla/inter can be rendered
+    loadn R3, #renderVar
+    loadi R4, R3
+    sub R4, R2, R4 ; coord of mob in render
+    loadn R5, #79 ; last coord in 2nd line (1-indexed)
+                  ; mob coord has to be greater than this
+    cmp R4, R5
+    jel renderSymbolBackgroundFinish
+
+    ; mob map coord must be eq or lower to maxRenderVar + 79
+    loadi R2, R1 ; mob map coord
+    inc R3 ; addr to max rendervar
+    loadi R4, R3 ; max rendervar
+    add R4, R4, R5 ; max rendervar + 79
+    cmp R2, R4 ; if greater, finish
+    jgr renderSymbolBackgroundFinish
+
+    ; actual rendering
+    loadn R3, #80 ; subs 2 in y axis (80)
+    loadi R1, R1 ; map coord
+    sub R5, R1, R3 ; coord of excla/inter in map
+    
+    ; check map prop
+    loadn R4, #mapProp
+    add R4, R4, R5 ; addr to coord in mapprop of symbol
+    loadi R4, R4 ; mapProp val
+    loadn R6, #1
+
+    cmp R4, R6 ; if mapProp = 1, render background
+    jeq renderExclaInterBackgroundBackground
+    inc R6
+    cmp R4, R6 ; if mapProp = 2, render background
+    jeq renderExclaInterBackgroundBackground
+    loadn R6, #0
+    cmp R4, R6 ; if mapProp = 0 
+                ; if player in there, render player , else, render back
+                ; else, test mapProp 3
+    jne renderExclaInterBackgroundTestMapProp3
+
+  ; R1 = mobCoord in map,
+  ; R5 = excla/inter coord inMap
+    load R3, playerCoordInMap
+    cmp R5, R3 ; if symbol in same coord as player, render player
+                ; else, test new coord
+    jne renderExclaInterBackgroundTestRightFace
+
+    ; if symbol is being tested, then it's already in a valid screen coord
+    load R3, playerCoordRender
+    loadn R4, #2305
+    outchar R4, R3 ; renders player left face
+    
+    jmp renderSymbolBackgroundFinish
+
+    renderExclaInterBackgroundTestRightFace:
+      inc R3
+      cmp R5, R3 ; if symbol in same coord as player, render player
+                  ; else, test new coord
+      jne renderExclaInterBackgroundTestRightLeg
+
+      ; if symbol is being tested, then it's already in a valid screen coord
+      load R3, playerCoordRender
+      inc R3
+      loadn R4, #2306
+      outchar R4, R3 ; renders player right face
+
+      jmp renderSymbolBackgroundFinish
+    
+    renderExclaInterBackgroundTestRightLeg:
+      loadn R4, #40
+      add R3, R3, R4 ; one down in y axis
+      cmp R5, R3 ; if symbol in same coord as player, render player
+                  ; else, test new coord
+      jne renderExclaInterBackgroundTestLeftLeg
+
+      ; if symbol is being tested, then it's already in a valid screen coord
+      load R3, playerCoordRender
+      inc R3
+      add R3, R3, R4 ; coord to render player
+      loadn R4, #771
+      outchar R4, R3 ; renders player right leg
+
+      jmp renderSymbolBackgroundFinish
+
+    renderExclaInterBackgroundTestLeftLeg:
+      dec R3 ; player left leg in map
+      cmp R5, R3 ; if symbol in same coord as player, render player
+                  ; else, test new coord
+      jne renderExclaInterBackgroundBackground
+
+      ; if symbol is being tested, then it's already in a valid screen coord
+      load R3, playerCoordRender
+      add R3, R3, R4 ; left leg player in render
+      loadn R4, #772
+      outchar R4, R3 ; renders player left leg
+
+      jmp renderSymbolBackgroundFinish
+
+    ; R1 = mobCoord in map,
+    ; R5 = excla/inter coord inMap
+    ; if mapProp in symbol coord = 3 (flower stealth)
+    renderExclaInterBackgroundTestMapProp3:
+      load R3, playerCoordInMap
+      cmp R3, R5 ; if symbol in same coord as player, render player
+                  ; else if symbol in same coord as player +1, render player
+                  ; else, render background
+      jne renderExclaInterBackgroundTestMapProp3RightFace
+
+      ; renders left face
+      load R3, playerCoordRender
+      loadn R4, #2822
+      outchar R4, R3
+
+      jmp renderSymbolBackgroundFinish
+
+    renderExclaInterBackgroundTestMapProp3RightFace:
+      inc R3 ; player's right face coord in map
+      cmp R3, R5 ; if symbol in same coord as player, render player
+                  ; else if symbol in same coord as player +1, render player
+                  ; else, render background
+      jne renderExclaInterBackgroundBackground
+
+      ; renders right face
+      load R3, playerCoordRender
+      inc R3 ; coord of right face in render
+      loadn R4, #2306
+      outchar R4, R3
+
+      jmp renderSymbolBackgroundFinish
+    
+    ; R1 = mobCoord in map, R2 = mobCoord in render
+    ; R5 = excla/inter coord inMap
+    renderExclaInterBackgroundBackground:
+      loadn R3, #mapTotal
+      add R3, R3, R5 ; addr pixel info in map for background
+      loadi R3, R3 ; info for pixel
+      load R4, renderVar
+      sub R4, R5, R4 ; symbol coord in map - min render pixel = symbol coord in render
+                      ; R4 = symbol coord in render
+      outchar R3, R5
+    
+  renderSymbolBackgroundFinish:
+    pop R6
+    pop R5
+    pop R4
+    pop R3
+    pop R2
+    pop R1
+    rts      
 
 
 ; R0 = addr to mob
@@ -1697,10 +2111,10 @@ delayPlayerMove2: var #1
 skinPlayerFrontStop: var #4
   static skinPlayerFrontStop + #0, #2305 ; left face
   static skinPlayerFrontStop + #1, #2306 ; right face
-  static skinPlayerFrontStop + #2, #2307 ; right leg
-  static skinPlayerFrontStop + #3, #2308 ; left leg
+  static skinPlayerFrontStop + #2, #771 ; right leg
+  static skinPlayerFrontStop + #3, #772 ; left leg
 
-mob1: var #13
+mob1: var #15
   static mob1 + #0, #0 ; if it's active or not
   static mob1 + #1, #2822 ; left face skin
   static mob1 + #2, #2823 ; right face skin
@@ -1711,9 +2125,11 @@ mob1: var #13
   static mob1 + #7, #0 ; chase bool
   static mob1 + #8, #0 ; alert bool
   static mob1 + #9, #1 ; side that mob is looking at, 0 for left, 1 for right
-  static mob1 + #10, #50 ; delay mobMove1 
+  static mob1 + #10, #1 ; delay mobMove1 
   static mob1 + #11, #65000 ; delay mobMove2
   static mob1 + #12, #0 ; number of script
+  static mob1 + #13, #50 ; alertTimer 1
+  static mob1 + #14, #65000 ; alertTimer 2
 
 
 ; starts at 841
