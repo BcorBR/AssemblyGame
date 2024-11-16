@@ -211,12 +211,12 @@ mobMain:
     call renderExclaInter
 
   checkActiveMob2:
+    pop R2
+    pop R1
+    pop R0
+    rts
 
-  pop R2
-  pop R1
-  pop R0
-  rts
-
+; will check chase and alert
 behaveMob:
   push R1
   push R2
@@ -305,6 +305,7 @@ mobMovement:
 
   ; CHASE SCRIPT HERE
   call scriptChase
+  call renderMob
   jmp mobMovementFinish
 
   mobMovementAlertTest:
@@ -402,14 +403,7 @@ scriptChase:
     jmp scriptChaseWalkUp
 
   scriptChaseWalkRight:
-    inc R6 ; coord to the right
-    storei R7, R6 ; stores new coord
-
-    inc R7
-    inc R7
-    inc R7 ; addr to side looking
-    loadn R6, #1
-    storei R7, R6 ; stores looking at right
+    call mobMoveRight
     
     loadn R6, #15
     add R6, R6, R0 ; addr to last movement
@@ -419,14 +413,7 @@ scriptChase:
     jmp scriptChaseFinish
 
   scriptChaseWalkLeft:
-    dec R6 ; coord to the left
-    storei R7, R6 ; stores new coord
-
-    inc R7
-    inc R7
-    inc R7 ; addr to side looking
-    loadn R6, #0
-    storei R7, R6 ; stores looking at right
+    call mobMoveLeft
     
     loadn R6, #15
     add R6, R6, R0 ; addr to last movement
@@ -436,9 +423,7 @@ scriptChase:
     jmp scriptChaseFinish
 
   scriptChaseWalkUp:
-    loadn R1, #40
-    sub R6, R6, R1 ; coord up
-    storei R7, R6 ; stores new coord
+    call mobMoveUp
     
     loadn R6, #15
     add R6, R6, R0 ; addr to last movement
@@ -448,9 +433,7 @@ scriptChase:
     jmp scriptChaseFinish
 
   scriptChaseWalkDown:
-    loadn R1, #40
-    add R6, R6, R1 ; coord down
-    storei R7, R6 ; stores new coord
+    call mobMoveDown
     
     loadn R6, #15
     add R6, R6, R0 ; addr to last movement
@@ -490,7 +473,8 @@ scriptMain:
   cmp R1, R3
   jne scriptMainTest1
   ; 0 does nothing
-  jmp checkRenderUpperMob1
+  call renderMob
+  jmp scriptMainFinish
 
   ;scriptMainTest
   scriptMainTest1:
@@ -526,24 +510,44 @@ scriptMain:
     call mobMoveChoice
     loadi R2, R2 ; new value of mobCoord
     cmp R2, R4
-    jne checkRenderUpperMob1 ; if mob coord == script[1 + 2*phasenum] 
+    cne renderMob ; if mob coord == script[1 + 2*phasenum] 
                          ; we've reached our destintion, inc 1 to sscript[0]
+    jne scriptMainFinish
+
     loadi R4, R3
-    inc R4 ; loads script[0] inc and stores it
+    inc R4 ; loads script#[0] inc and stores it
     storei R3, R4
 
-    jmp checkRenderUpperMob1
+    call renderMob
+    jmp scriptMainFinish
   
   ; R3 must be addr of script
   scriptMainLastPhase:
     loadn R4, #0
     storei R3, R4 ; restarts num phase
 
-    jmp checkRenderUpperMob1
-  
+    call renderMob   
+
+  scriptMainFinish:
+    pop R6
+    pop R5
+    pop R4
+    pop R3
+    pop R2
+    pop R1
+    rts
+
+renderMob:
+  push FR
+  push R1
+  push R2
+  push R3
+  push R4
+  push R5
+  push R6
+  push R7
   ; check if coord right to render 
   ; checks first y
-  checkRenderUpperMob1:
     loadn R5, #renderVar
     
     loadn R7, #6
@@ -628,13 +632,13 @@ scriptMain:
 
     loadi R2, R5 ; min render coord
     cmp R1, R2 ; check if lower part coord is greater or equal than min renderCoord
-    jle scriptMainFinish ; CHANGE THIS LATER!!!!!!!!!!!!!!!!!!
+    jle renderMobFinish
 
     ; now checking max renderCoord
     inc R5
     loadi R2, R5
     cmp R1, R2 ; check if mapCoord lesser than maxCoord (exclusive)
-    jeg scriptMainFinish  ; CHANGE THIS LATER!!!!!!!!!!!!!!!!!!
+    jeg renderMobFinish
 
       ; renders lower part of mob
         ; checks mob side
@@ -664,7 +668,7 @@ scriptMain:
         inc R6 ; increments render coord
         outchar R4, R6
 
-        jmp scriptMainFinish
+        jmp renderMobFinish
 
         checkRenderLowerMob1Left:
           loadn R4, #2828 ; right leg skin
@@ -679,15 +683,17 @@ scriptMain:
           ; renders left leg
           inc R4 ; left leg skin
           dec R6 ; increments render coord
-          outchar R4, R6      
+          outchar R4, R6  
 
-  scriptMainFinish:
+  renderMobFinish:
+    pop R7
     pop R6
     pop R5
     pop R4
     pop R3
     pop R2
     pop R1
+    pop FR
     rts
 
 ; will use R3 as script addr and
@@ -696,11 +702,7 @@ scriptMain:
 mobMoveChoice:
   push R1
   push R2
-  push R3
-  push R4
-  push R5
   push R6
-  push R7
   
   ; checks delay
   call delayMoveMob ; will return bool in R2
@@ -714,80 +716,455 @@ mobMoveChoice:
 
   loadn R2, #'r'
   cmp R1, R2 ; if true, move right
-  jeq mobMoveRight
+  ceq mobMoveRight
 
   loadn R2, #'l'
   cmp R1, R2 ; if true, move left
-  jeq mobMoveLeft
+  ceq mobMoveLeft
 
   loadn R2, #'d'
   cmp R1, R2 ; if true, move down
-  jeq mobMoveDown
+  ceq mobMoveDown
 
   loadn R2, #'u'
   cmp R1, R2 ; if true, move up
-  jeq mobMoveUp
+  ceq mobMoveUp
 
-  jmp mobMoveChoiceFinish
+  mobMoveChoiceFinish:
+    pop R6
+    pop R2
+    pop R1
+    rts
 
-  mobMoveRight:
-  ; stores right side
-    loadn R1, #9
-    add R1, R1, R0 ; addr to side mob
-    loadn R2, #1
-    storei R1, R2 ; stores 1 to side val (right)
+mobMoveUp:
+  push R1
+  push R2
+  push R3
+  push R4
+  push R5
+  push R6
+  push R7
+
+  loadn R2, #6
+  add R2, R2, R0 ; addr to mapcoord
+  loadi R1, R2
+
+  ; if coord < 40, do nothing
+  loadn R4, #40
+  cmp R1, R4
+  jle mobMoveUpFinish
+
+  ; update map coord
+  call renderSymbolBackground ; unrender symbol chase/alert
+  loadi R3, R2
+  sub R3, R3, R4; -40 mapcoord
+  storei R2, R3
+
+  ; test side to restore background
+  loadn R4, #3
+  add R1, R2, R4 ; addr to side
+  loadi R1, R1
+
+  loadn R4, #0
+  cmp R1, R4 ; if not equal, restore right
+  jne mobMoveUpRestoreRight
+
+  ; test render coords
+  loadn R1, #renderVar
+  loadi R4, R1 ; min renderVar
+  cmp R3, R4 ; must be equal or greater
+              ; else, test lower part
+  jle mobMoveUpRestoreLeftTestLower
+
+  inc R1
+  loadi R4, R1 ; max renderVar
+  cmp R3, R4 ; must be lesser
+              ; else, test lower part
+  jeg mobMoveUpRestoreLeftTestLower
+
+  ; restores upper part side left
+  dec R1
+  loadi R4, R1 ; min rendervar
+
+  inc R3 ; past coords of wings
+  loadn R5, #mapTotal
+  add R5, R3, R5 ; addr to pix info
+  loadi R6, R5 ; pix info
+  sub R7, R3, R4 ; mapcoord - minRenderVar
+  outchar R6, R7
+
+  mobMoveUpRestoreLeftTestLower:
+    loadn R2, #renderVar
+    loadi R1, R2
+
+    loadn R3, #6
+    add R3, R3, R0
+    loadi R3, R3 ; mob coord
+    loadn R4, #80
+    add R3, R3, R4 ; past coord of right foot
+    cmp R3, R1 ; must be equal pr greater than min coord
+                ; else finish
+    jle mobMoveUpFinish
+
+    inc R2
+    loadi R1, R2 ; max rendervar
+    cmp R3, R1 ; must be lesser than max coord
+                ; else, finish
+    jeg mobMoveUpFinish
+
+    ; renders lower part
+    loadn R4, #mapTotal
+    add R4, R3, R4 ; addr to pix info
+    loadi R5, R4 ; pix info
+    dec R2
+    loadi R1, R2 ; min rendervar
+    sub R3, R3, R1 ; coord to be rendered
+    outchar R5, R3
+
+    ; next pix
+    dec R3 ; coord to be rendered
+    dec R4
+    loadi R5, R4 ; pix info
+    outchar R5, R3
+
+    jmp mobMoveUpFinish
+
+  mobMoveUpRestoreRight:
+    ; test render coords
+    loadn R1, #renderVar
+    loadi R4, R1 ; min renderVar
 
     loadn R2, #6
-    add R2, R2, R0 ; addr to mapcoord
-    loadi R1, R2
-    inc R1 ; 1 pix to the right, mob's head
+    add R2, R2, R0 ; addr to mobcoord
+    loadi R3, R2 ; mob coord
+    loadn R5, #39
+    add R3, R3, R5 ; past coord of wings
 
-    ; if (mob's head + 1) mod 40 == 0, do nothing
-    mov R3, R1
-    inc R3
-    loadn R4, #40
-    mod R3, R3, R4 ; (mob's head + 1) mod 40
+    cmp R3, R4 ; must be equal or greater
+                ; else, testlower
+    jle mobMoveUpRestoreRightTestLower
 
-    loadn R4, #0
-    cmp R3, R4 ; if == 0, finish
-    jeq mobMoveChoiceFinish
+    inc R1
+    loadi R4, R1 ; max renderVar
+    cmp R3, R4 ; must be lesser
+                ; else, testlower
+    jeg mobMoveUpRestoreRightTestLower
 
-    ; update map coord
-    call renderSymbolBackground ; unrender symbol chase/alert
-    loadi R3, R2
-    inc R3 ; +1 mapcoord
-    storei R2, R3
+    ; restores upper part side left
+    dec R1
+    loadi R4, R1 ; min rendervar
 
-    mobMoveRightTestUpper:
-      ; restore background
-      loadn R5, #renderVar
-      loadi R4, R5 ; map coord must greater than min var render
+    loadn R5, #mapTotal
+    add R5, R3, R5 ; addr to pix info
+    loadi R6, R5 ; pix info
+    sub R7, R3, R4 ; mapcoord - minRenderVar
+    outchar R6, R7
 
-      loadi R3, R2 ; mob coord
-      dec R3
-      dec R3 ; coord of where wings were
-      cmp R3, R4 ; if equal or greater, test maxCoord
-                ; else, test lower part
-      jle mobMoveRightTestLower
+    mobMoveUpRestoreRightTestLower:
+      loadn R2, #renderVar
+      loadi R1, R2
 
-      inc R5 ; addr to max coord
-      loadi R4, R5
-      cmp R3, R4 ; if lesser, render background
-                ; else, test lower part
-      jeg mobMoveRightTestLower
+      loadn R3, #6
+      add R3, R3, R0
+      loadi R3, R3 ; mob coord
+      loadn R4, #80
+      add R3, R3, R4 ; past coord of left foot
+      cmp R3, R1 ; must be equal or greater than min coord
+                  ; else finish
+      jle mobMoveUpFinish
 
-      ; restores upper background 
-      loadn R6, #mapTotal
-      add R6, R3, R6
-      loadi R6, R6 ; pix info
+      inc R2
+      loadi R1, R2 ; max rendervar
+      cmp R3, R1 ; must be lesser than max coord
+                  ; else, finish
+      jeg mobMoveUpFinish
 
-      dec R5 ; addr min renderVar
-      loadi R4, R5 ; min rendervar
-      sub R4, R3, R4 ; coordRender
+      ; renders lower part
+      loadn R4, #mapTotal
+      add R4, R3, R4 ; addr to pix info
+      loadi R5, R4 ; pix info
+      dec R2
+      loadi R1, R2 ; min rendervar
+      sub R3, R3, R1 ; coord to be rendered
+      outchar R5, R3
 
-      outchar R6, R4
+      ; next pix
+      inc R3 ; coord to be rendered
+      inc R4
+      loadi R5, R4 ; pix info
+      outchar R5, R3
 
-    mobMoveRightTestLower:
+  mobMoveUpFinish:
+    pop R7
+    pop R6
+    pop R5
+    pop R4
+    pop R3
+    pop R2
+    pop R1
+    rts
+
+
+mobMoveDown:
+  push R1
+  push R2
+  push R3
+  push R4
+  push R5
+  push R6
+  push R7
+
+  loadn R2, #6
+  add R2, R2, R0 ; addr to mapcoord
+  loadi R1, R2
+
+  ; if coord > 1639, do nothing
+  loadn R4, #1639
+  cmp R1, R4
+  jgr mobMoveDownFinish
+
+  ; update map coord
+  call renderSymbolBackground ; unrender symbol chase/alert
+  loadi R3, R2
+  loadn R4, #40
+  add R3, R3, R4; +40 mapcoord
+  storei R2, R3
+
+  ; restore background
+  loadn R5, #renderVar
+  loadi R4, R5 ; map coord must equal or  greater than min var render
+  
+  loadn R4, #40
+  sub R3, R3, R4 ; past mob coord
+  
+  cmp R3, R4 ; if equal or greater, test maxCoord
+              ; else, finish
+  jle mobMoveDownFinish
+
+  inc R5 ; addr to max coord
+  loadi R4, R5
+  cmp R3, R4 ; if lesser, render background
+              ; else, finish
+  jeg mobMoveDownFinish
+
+  ; restores upper background 
+  loadn R6, #mapTotal
+  add R6, R3, R6 ; addr of pix info
+  loadi R7, R6 ; pix info
+
+  dec R5 ; addr min renderVar
+  loadi R4, R5 ; min rendervar
+  sub R4, R3, R4 ; coordRender
+  outchar R7, R4
+
+  ; 1 pix left
+  dec R6
+  loadi R7, R6 ; pix info
+  dec R3 ; 1 pix left
+  loadi R4, R5 ; min rendervar
+  sub R4, R3, R4 ; coord to render
+  outchar R7, R4
+
+  ; 1 pix to the right of first
+  inc R6
+  inc R6 ; addr to pix info
+  loadi R7, R6
+  inc R3
+  inc R3 ; coord in map
+  loadi R4, R5 ; min rendervar
+  sub R4, R3, R4
+  outchar R7, R4
+
+  mobMoveDownFinish:
+    pop R7
+    pop R6
+    pop R5
+    pop R4
+    pop R3
+    pop R2
+    pop R1
+    rts
+
+
+mobMoveLeft:
+  push R1
+  push R2
+  push R3
+  push R4
+  push R5
+  push R6
+  push R7
+
+  ; stores left side
+  loadn R1, #9
+  add R1, R1, R0 ; addr to side mob
+  loadn R2, #0
+  storei R1, R2 ; stores 0 to side val (right)
+
+  loadn R2, #6
+  add R2, R2, R0 ; addr to mapcoord
+  loadi R1, R2
+  dec R1 ; 1 pix to the left, mob's head
+
+  ; if (mob's head) mod 40 == 0, do nothing
+  loadn R4, #40
+  mod R1, R1, R4 ; (mob's head) mod 40
+
+  loadn R4, #0
+  cmp R1, R4 ; if == 0, finish
+  jeq mobMoveLeftFinish
+
+  ; update map coord
+  call renderSymbolBackground ; unrender symbol chase/alert
+  loadi R3, R2
+  dec R3 ; -1 mapcoord
+  storei R2, R3
+
+  ; restore background
+  loadn R5, #renderVar
+  loadi R4, R5 ; map coord must equal or  greater than min var render
+  
+  loadn R2, #6
+  add R2, R2, R0 ; addr to mapcoord
+  loadi R3, R2
+  inc R3
+  inc R3 ; coord of where wings were
+  
+  cmp R3, R4 ; if equal or greater, test maxCoord
+              ; else, test lower part
+  jle mobMoveLeftTestLower
+
+  inc R5 ; addr to max coord
+  loadi R4, R5
+  cmp R3, R4 ; if lesser, render background
+              ; else, test lower part
+  jeg mobMoveLeftTestLower
+
+  ; restores upper background 
+  loadn R6, #mapTotal
+  add R6, R3, R6
+  loadi R6, R6 ; pix info
+
+  dec R5 ; addr min renderVar
+  loadi R4, R5 ; min rendervar
+  sub R4, R3, R4 ; coordRender
+
+  outchar R6, R4
+
+  mobMoveLeftTestLower:
+    ; tests lower part
+    loadn R5, #renderVar
+    
+    loadn R2, #6
+    add R2, R2, R0 ; addr to mobcoord
+    loadi R3, R2      
+    
+    loadn R6, #42
+    add R3, R3, R6 ; right of right leg
+    loadi R4, R5
+    cmp R3, R4 ; if equal or greater, test maxCoord
+              ; else, do nothing
+    jle mobMoveLeftFinish
+
+    inc R5 ; addr to max rendervar
+    loadi R4, R5
+    cmp R3, R4 ; if lesser, render background
+              ; else, do nothing
+    jeg mobMoveLeftFinish
+
+    ; renders lower part
+    loadn R6, #mapTotal
+    add R6, R3, R6
+    loadi R7, R6 ; pix info
+    
+    dec R5 ; addr to minrendervar
+    loadi R4, R5
+    sub R3, R3, R4 ; coordrender
+    outchar R7, R3
+
+    ; pix to the left
+    dec R6 ; mapTotal index
+    loadi R7, R6
+    dec R3 ; renderCoord
+    outchar R7, R3
+
+mobMoveLeftFinish:
+  pop R7
+  pop R6
+  pop R5
+  pop R4
+  pop R3
+  pop R2
+  pop R1
+  rts
+
+
+mobMoveRight:
+  push R1
+  push R2
+  push R3
+  push R4
+  push R5
+  push R6
+  push R7
+
+  ; stores right side
+  loadn R1, #9
+  add R1, R1, R0 ; addr to side mob
+  loadn R2, #1
+  storei R1, R2 ; stores 1 to side val (right)
+
+  loadn R2, #6
+  add R2, R2, R0 ; addr to mapcoord
+  loadi R1, R2
+  inc R1 ; 1 pix to the right, mob's head
+
+  ; if (mob's head + 1) mod 40 == 0, do nothing
+  mov R3, R1
+  inc R3
+  loadn R4, #40
+  mod R3, R3, R4 ; (mob's head + 1) mod 40
+
+  loadn R4, #0
+  cmp R3, R4 ; if == 0, finish
+  jeq mobMoveRightFinish
+
+  ; update map coord
+  call renderSymbolBackground ; unrender symbol chase/alert
+  loadi R3, R2
+  inc R3 ; +1 mapcoord
+  storei R2, R3
+
+  mobMoveRightTestUpper:
+    ; restore background
+    loadn R5, #renderVar
+    loadi R4, R5 ; map coord must greater than min var render
+
+    loadi R3, R2 ; mob coord
+    dec R3
+    dec R3 ; coord of where wings were
+    cmp R3, R4 ; if equal or greater, test maxCoord
+              ; else, test lower part
+    jle mobMoveRightTestLower
+
+    inc R5 ; addr to max coord
+    loadi R4, R5
+    cmp R3, R4 ; if lesser, render background
+              ; else, test lower part
+    jeg mobMoveRightTestLower
+
+    ; restores upper background 
+    loadn R6, #mapTotal
+    add R6, R3, R6
+    loadi R6, R6 ; pix info
+
+    dec R5 ; addr min renderVar
+    loadi R4, R5 ; min rendervar
+    sub R4, R3, R4 ; coordRender
+
+    outchar R6, R4
+
+  mobMoveRightTestLower:
     ; tests lower part
     ; R5 = addr to min coord render
     ; R3 = past mapcoords of wings
@@ -801,14 +1178,14 @@ mobMoveChoice:
     add R3, R3, R6 ; left of left leg
     loadi R4, R5
     cmp R3, R4 ; if equal or greater, test maxCoord
-               ; else, do nothing
-    jle mobMoveChoiceFinish
+                ; else, do nothing
+    jle mobMoveRightFinish
 
     inc R5 ; addr to max rendervar
     loadi R4, R5
     cmp R3, R4 ; if lesser, render background
-               ; else, do nothing
-    jeg mobMoveChoiceFinish
+                ; else, do nothing
+    jeg mobMoveRightFinish
 
     ; renders lower part
     dec R5 ; addr to min rendervar
@@ -826,321 +1203,7 @@ mobMoveChoice:
     inc R5 ; next coord in render
     outchar R7, R5
 
-    jmp mobMoveChoiceFinish
-  
-  mobMoveLeft:
-  ; stores left side
-    loadn R1, #9
-    add R1, R1, R0 ; addr to side mob
-    loadn R2, #0
-    storei R1, R2 ; stores 0 to side val (right)
-
-    loadn R2, #6
-    add R2, R2, R0 ; addr to mapcoord
-    loadi R1, R2
-    dec R1 ; 1 pix to the left, mob's head
-
-    ; if (mob's head) mod 40 == 0, do nothing
-    loadn R4, #40
-    mod R1, R1, R4 ; (mob's head) mod 40
-
-    loadn R4, #0
-    cmp R1, R4 ; if == 0, finish
-    jeq mobMoveChoiceFinish
-
-    ; update map coord
-    call renderSymbolBackground ; unrender symbol chase/alert
-    loadi R3, R2
-    dec R3 ; -1 mapcoord
-    storei R2, R3
-
-    ; restore background
-    loadn R5, #renderVar
-    loadi R4, R5 ; map coord must equal or  greater than min var render
-    
-    loadn R2, #6
-    add R2, R2, R0 ; addr to mapcoord
-    loadi R3, R2
-    inc R3
-    inc R3 ; coord of where wings were
-    
-    cmp R3, R4 ; if equal or greater, test maxCoord
-               ; else, test lower part
-    jle mobMoveLeftTestLower
-
-    inc R5 ; addr to max coord
-    loadi R4, R5
-    cmp R3, R4 ; if lesser, render background
-               ; else, test lower part
-    jeg mobMoveLeftTestLower
-
-    ; restores upper background 
-    loadn R6, #mapTotal
-    add R6, R3, R6
-    loadi R6, R6 ; pix info
-
-    dec R5 ; addr min renderVar
-    loadi R4, R5 ; min rendervar
-    sub R4, R3, R4 ; coordRender
-
-    outchar R6, R4
-
-    mobMoveLeftTestLower:
-      ; tests lower part
-      loadn R5, #renderVar
-      
-      loadn R2, #6
-      add R2, R2, R0 ; addr to mobcoord
-      loadi R3, R2      
-      
-      loadn R6, #42
-      add R3, R3, R6 ; right of right leg
-      loadi R4, R5
-      cmp R3, R4 ; if equal or greater, test maxCoord
-                ; else, do nothing
-      jle mobMoveChoiceFinish
-
-      inc R5 ; addr to max rendervar
-      loadi R4, R5
-      cmp R3, R4 ; if lesser, render background
-                ; else, do nothing
-      jeg mobMoveChoiceFinish
-
-      ; renders lower part
-      loadn R6, #mapTotal
-      add R6, R3, R6
-      loadi R7, R6 ; pix info
-      
-      dec R5 ; addr to minrendervar
-      loadi R4, R5
-      sub R3, R3, R4 ; coordrender
-      outchar R7, R3
-
-      ; pix to the left
-      dec R6 ; mapTotal index
-      loadi R7, R6
-      dec R3 ; renderCoord
-      outchar R7, R3
-
-      jmp mobMoveChoiceFinish
-
-  mobMoveDown:
-    loadn R2, #6
-    add R2, R2, R0 ; addr to mapcoord
-    loadi R1, R2
-
-    ; if coord > 1639, do nothing
-    loadn R4, #1639
-    cmp R1, R4
-    jgr mobMoveChoiceFinish
-
-    ; update map coord
-    call renderSymbolBackground ; unrender symbol chase/alert
-    loadi R3, R2
-    loadn R4, #40
-    add R3, R3, R4; +40 mapcoord
-    storei R2, R3
-
-    ; restore background
-    loadn R5, #renderVar
-    loadi R4, R5 ; map coord must equal or  greater than min var render
-    
-    loadn R4, #40
-    sub R3, R3, R4 ; past mob coord
-    
-    cmp R3, R4 ; if equal or greater, test maxCoord
-               ; else, finish
-    jle mobMoveChoiceFinish
-
-    inc R5 ; addr to max coord
-    loadi R4, R5
-    cmp R3, R4 ; if lesser, render background
-               ; else, finish
-    jeg mobMoveChoiceFinish
-
-    ; restores upper background 
-    loadn R6, #mapTotal
-    add R6, R3, R6 ; addr of pix info
-    loadi R7, R6 ; pix info
-
-    dec R5 ; addr min renderVar
-    loadi R4, R5 ; min rendervar
-    sub R4, R3, R4 ; coordRender
-    outchar R7, R4
-
-    ; 1 pix left
-    dec R6
-    loadi R7, R6 ; pix info
-    dec R3 ; 1 pix left
-    loadi R4, R5 ; min rendervar
-    sub R4, R3, R4 ; coord to render
-    outchar R7, R4
-
-    ; 1 pix to the right of first
-    inc R6
-    inc R6 ; addr to pix info
-    loadi R7, R6
-    inc R3
-    inc R3 ; coord in map
-    loadi R4, R5 ; min rendervar
-    sub R4, R3, R4
-    outchar R7, R4
-
-    jmp mobMoveChoiceFinish    
-
-  mobMoveUp:
-    loadn R2, #6
-    add R2, R2, R0 ; addr to mapcoord
-    loadi R1, R2
-
-    ; if coord < 40, do nothing
-    loadn R4, #40
-    cmp R1, R4
-    jle mobMoveChoiceFinish
-
-    ; update map coord
-    call renderSymbolBackground ; unrender symbol chase/alert
-    loadi R3, R2
-    sub R3, R3, R4; -40 mapcoord
-    storei R2, R3
-
-    ; test side to restore background
-    loadn R4, #3
-    add R1, R2, R4 ; addr to side
-    loadi R1, R1
-
-    loadn R4, #0
-    cmp R1, R4 ; if not equal, restore right
-    jne mobMoveUpRestoreRight
-
-    ; test render coords
-    loadn R1, #renderVar
-    loadi R4, R1 ; min renderVar
-    cmp R3, R4 ; must be equal or greater
-               ; else, test lower part
-    jle mobMoveUpRestoreLeftTestLower
-
-    inc R1
-    loadi R4, R1 ; max renderVar
-    cmp R3, R4 ; must be lesser
-               ; else, test lower part
-    jeg mobMoveUpRestoreLeftTestLower
-
-    ; restores upper part side left
-    dec R1
-    loadi R4, R1 ; min rendervar
-
-    inc R3 ; past coords of wings
-    loadn R5, #mapTotal
-    add R5, R3, R5 ; addr to pix info
-    loadi R6, R5 ; pix info
-    sub R7, R3, R4 ; mapcoord - minRenderVar
-    outchar R6, R7
-
-    mobMoveUpRestoreLeftTestLower:
-      loadn R2, #renderVar
-      loadi R1, R2
-
-      loadn R3, #6
-      add R3, R3, R0
-      loadi R3, R3 ; mob coord
-      loadn R4, #80
-      add R3, R3, R4 ; past coord of right foot
-      cmp R3, R1 ; must be equal pr greater than min coord
-                 ; else finish
-      jle mobMoveChoiceFinish
-
-      inc R2
-      loadi R1, R2 ; max rendervar
-      cmp R3, R1 ; must be lesser than max coord
-                 ; else, finish
-      jeg mobMoveChoiceFinish
-
-      ; renders lower part
-      loadn R4, #mapTotal
-      add R4, R3, R4 ; addr to pix info
-      loadi R5, R4 ; pix info
-      dec R2
-      loadi R1, R2 ; min rendervar
-      sub R3, R3, R1 ; coord to be rendered
-      outchar R5, R3
-
-      ; next pix
-      dec R3 ; coord to be rendered
-      dec R4
-      loadi R5, R4 ; pix info
-      outchar R5, R3
-
-      jmp mobMoveChoiceFinish
-
-    mobMoveUpRestoreRight:
-      ; test render coords
-      loadn R1, #renderVar
-      loadi R4, R1 ; min renderVar
-
-      loadn R2, #6
-      add R2, R2, R0 ; addr to mobcoord
-      loadi R3, R2 ; mob coord
-      loadn R5, #39
-      add R3, R3, R5 ; past coord of wings
-
-      cmp R3, R4 ; must be equal or greater
-                 ; else, testlower
-      jle mobMoveUpRestoreRightTestLower
-
-      inc R1
-      loadi R4, R1 ; max renderVar
-      cmp R3, R4 ; must be lesser
-                 ; else, testlower
-      jeg mobMoveUpRestoreRightTestLower
-
-      ; restores upper part side left
-      dec R1
-      loadi R4, R1 ; min rendervar
-
-      loadn R5, #mapTotal
-      add R5, R3, R5 ; addr to pix info
-      loadi R6, R5 ; pix info
-      sub R7, R3, R4 ; mapcoord - minRenderVar
-      outchar R6, R7
-
-      mobMoveUpRestoreRightTestLower:
-        loadn R2, #renderVar
-        loadi R1, R2
-
-        loadn R3, #6
-        add R3, R3, R0
-        loadi R3, R3 ; mob coord
-        loadn R4, #80
-        add R3, R3, R4 ; past coord of left foot
-        cmp R3, R1 ; must be equal or greater than min coord
-                   ; else finish
-        jle mobMoveChoiceFinish
-
-        inc R2
-        loadi R1, R2 ; max rendervar
-        cmp R3, R1 ; must be lesser than max coord
-                   ; else, finish
-        jeg mobMoveChoiceFinish
-
-        ; renders lower part
-        loadn R4, #mapTotal
-        add R4, R3, R4 ; addr to pix info
-        loadi R5, R4 ; pix info
-        dec R2
-        loadi R1, R2 ; min rendervar
-        sub R3, R3, R1 ; coord to be rendered
-        outchar R5, R3
-
-        ; next pix
-        inc R3 ; coord to be rendered
-        inc R4
-        loadi R5, R4 ; pix info
-        outchar R5, R3
-
-        jmp mobMoveChoiceFinish
-
-  mobMoveChoiceFinish:
+  mobMoveRightFinish:
     pop R7
     pop R6
     pop R5
@@ -2180,8 +2243,7 @@ algorithmLine:
             inc R5 ; increments counter
             jmp algorithmLineVStraightLoop
 
-
-
+    
     algorithmLineFinish:
       pop R7
       pop R6
@@ -2190,7 +2252,6 @@ algorithmLine:
       pop R3
       pop R1
       rts
-
 
 
 DelayMove:
