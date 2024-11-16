@@ -304,6 +304,8 @@ mobMovement:
   jne mobMovementAlertTest
 
   ; CHASE SCRIPT HERE
+  call scriptChase
+  jmp mobMovementFinish
 
   mobMovementAlertTest:
     inc R3 ; addr of alert bool
@@ -317,10 +319,154 @@ mobMovement:
   mobMovementScriptMain:
     call scriptMain
 
-  pop R3
-  pop R2
-  pop R1
-  rts
+  mobMovementFinish:
+    pop R3
+    pop R2
+    pop R1
+    rts
+
+
+scriptChase:
+  push R1
+  push R2
+  push R3
+  push R4
+  push R5
+  push R6
+  push R7
+
+  ; DEKLAYYYYYYYYYYYYYYYYYYYYYYYYYYY
+  call delayMoveMob ; will return bool in R2
+  loadn R1, #0
+  cmp R2, R1 ; if == 0, finish
+             ; else, go on
+  jeq scriptChaseFinish
+
+  loadn R3, #6
+  add R7, R3, R0 ; addr  to mob coord
+  loadi R6, R7 ; mob coord
+  
+  loadn R4, #40
+  mod R1, R6, R4 ; mob.x
+  div R2, R6, R4 ; mob.y
+
+  load R5, playerCoordInMap
+  mod R3, R5, R4 ; player.x
+  div R4, R5, R4 ; player.y
+
+  loadn R5, #15
+  add R5, R5, R0 ; addr to last move
+  loadi R5, R5 ; last move
+
+  cmp R3, R1 ; player.x > mob.x
+             ; else if lesser, player.x lesser
+             ; else if equal, test player.y
+  jle scriptChasePlXLesMobX
+  jeq scriptChasePlYGrMobY
+
+  loadn R6, #'v' ; to compare with last move
+  cmp R5, R6 ; last move vertical
+  jeq scriptChaseWalkRight
+
+  cmp R4, R2 ; if player.y > mob.y
+  jgr scriptChaseWalkDown
+  jle scriptChaseWalkUp
+
+  jmp scriptChaseWalkRight
+
+  scriptChasePlXLesMobX:
+    loadn R6, #'v' ; to compare with last move
+    cmp R5, R6 ; last move vertical
+    jeq scriptChaseWalkLeft
+
+    cmp R4, R2 ; if player.y > mob.y
+    jgr scriptChaseWalkDown
+    jle scriptChaseWalkUp
+
+    jmp scriptChaseWalkLeft
+
+  scriptChasePlYGrMobY:
+    cmp R4, R2 ; player.y > mob.y
+               ; else, player.y < mob.y
+    jel scriptChasePlYLesMobY
+
+  scriptChasePlYLesMobY:
+    loadn R6, #'h' ; to compare with last move
+    cmp R5, R6 ; last move horizontal
+    jeq scriptChaseWalkUp
+
+    cmp R3, R1 ; if player.x > mob.x
+    jgr scriptChaseWalkRight
+    jle scriptChaseWalkLeft
+
+    jmp scriptChaseWalkUp
+
+  scriptChaseWalkRight:
+    inc R6 ; coord to the right
+    storei R7, R6 ; stores new coord
+
+    inc R7
+    inc R7
+    inc R7 ; addr to side looking
+    loadn R6, #1
+    storei R7, R6 ; stores looking at right
+    
+    loadn R6, #15
+    add R6, R6, R0 ; addr to last movement
+    loadn R7, #'h'
+    storei R6, R7
+
+    jmp scriptChaseFinish
+
+  scriptChaseWalkLeft:
+    dec R6 ; coord to the left
+    storei R7, R6 ; stores new coord
+
+    inc R7
+    inc R7
+    inc R7 ; addr to side looking
+    loadn R6, #0
+    storei R7, R6 ; stores looking at right
+    
+    loadn R6, #15
+    add R6, R6, R0 ; addr to last movement
+    loadn R7, #'h'
+    storei R6, R7
+
+    jmp scriptChaseFinish
+
+  scriptChaseWalkUp:
+    loadn R1, #40
+    sub R6, R6, R1 ; coord up
+    storei R7, R6 ; stores new coord
+    
+    loadn R6, #15
+    add R6, R6, R0 ; addr to last movement
+    loadn R7, #'v'
+    storei R6, R7
+
+    jmp scriptChaseFinish
+
+  scriptChaseWalkDown:
+    loadn R1, #40
+    add R6, R6, R1 ; coord down
+    storei R7, R6 ; stores new coord
+    
+    loadn R6, #15
+    add R6, R6, R0 ; addr to last movement
+    loadn R7, #'v'
+    storei R6, R7
+
+  scriptChaseFinish:
+    pop R7
+    pop R6
+    pop R5
+    pop R4
+    pop R3
+    pop R2
+    pop R1
+    rts
+
 
 
 ; will use R0 as addr of mob
@@ -371,7 +517,7 @@ scriptMain:
     loadi R4, R6 ; R4 = script[1+2*phaseNum]
 
     loadn R5, #0
-    cmp R4, R5 ; if == 0, phaseNum = 0
+    cmp R4, R5 ; if == 0, phaseNFum = 0
     jeq scriptMainLastPhase
 
     ; R3 = script1 addr
@@ -415,6 +561,14 @@ scriptMain:
     jeg checkRenderLowerMob1
 
       ; renders upper part of mob
+      ; checks mob side
+      loadn R3, #9
+      add R3, R3, R0 ; addr to mob side
+      loadi R3, R3
+      loadn R4, #0 ; if equal, render left
+      cmp R3, R4
+      jeq checkRenderUpperMob1Left
+
       mov R3, R0
       inc R3 ; addr to first skin
       loadi R4, R3 ; R4 has skin
@@ -441,6 +595,30 @@ scriptMain:
       dec R6 ; wing render coord
       outchar R4, R6
 
+      jmp checkRenderLowerMob1
+
+      checkRenderUpperMob1Left:
+        loadn R4, #2827
+
+        ; R1 has coordinMap, R2 has max render coord, R4 has skin
+        ; renders right face
+        load R2, renderVar ; R2 now has min coord render
+        sub R6, R1, R2 ; has to render in coord (mapCoord - minRenderVar)
+        outchar R4, R6
+
+        ; renders right face
+        dec R4 ; left face skin
+        dec R6 ; decrements render coord
+        outchar R4, R6
+        
+        ; renders wings
+        loadn R4, #2062
+        inc R6
+        inc R6 ; wing render coord
+        outchar R4, R6
+
+        jmp checkRenderLowerMob1
+
   checkRenderLowerMob1:
     ; R0 = addr of mob1, R1 = mapCoord, R3 = addr first skin
     loadn R5, #renderVar
@@ -450,15 +628,23 @@ scriptMain:
 
     loadi R2, R5 ; min render coord
     cmp R1, R2 ; check if lower part coord is greater or equal than min renderCoord
-    jle checkChaseBool ; CHANGE THIS LATER!!!!!!!!!!!!!!!!!!
+    jle scriptMainFinish ; CHANGE THIS LATER!!!!!!!!!!!!!!!!!!
 
     ; now checking max renderCoord
     inc R5
     loadi R2, R5
     cmp R1, R2 ; check if mapCoord lesser than maxCoord (exclusive)
-    jeg checkChaseBool  ; CHANGE THIS LATER!!!!!!!!!!!!!!!!!!
+    jeg scriptMainFinish  ; CHANGE THIS LATER!!!!!!!!!!!!!!!!!!
 
       ; renders lower part of mob
+        ; checks mob side
+        loadn R3, #9
+        add R3, R3, R0 ; addr to mob side
+        loadi R3, R3
+        loadn R4, #0 ; if equal, render left
+        cmp R3, R4
+        jeq checkRenderLowerMob1Left
+
         mov R3, R0
         inc R3
         inc R3
@@ -478,7 +664,24 @@ scriptMain:
         inc R6 ; increments render coord
         outchar R4, R6
 
-  checkRenderUpperMob1:
+        jmp scriptMainFinish
+
+        checkRenderLowerMob1Left:
+          loadn R4, #2828 ; right leg skin
+
+          ; using R0, R1, R2, R3, R5
+          ; R1 has coordinMap of left leg, R2 has max render coord, R4 has skin
+          ; renders right leg
+          load R2, renderVar ; R2 now has min coord render
+          sub R6, R1, R2 ; has to render in coord (mapCoord - minRenderVar)
+          outchar R4, R6
+
+          ; renders left leg
+          inc R4 ; left leg skin
+          dec R6 ; increments render coord
+          outchar R4, R6      
+
+  scriptMainFinish:
     pop R6
     pop R5
     pop R4
@@ -630,7 +833,7 @@ mobMoveChoice:
     loadn R1, #9
     add R1, R1, R0 ; addr to side mob
     loadn R2, #0
-    storei R1, R2 ; stores 1 to side val (right)
+    storei R1, R2 ; stores 0 to side val (right)
 
     loadn R2, #6
     add R2, R2, R0 ; addr to mapcoord
@@ -936,7 +1139,6 @@ mobMoveChoice:
         outchar R5, R3
 
         jmp mobMoveChoiceFinish
-
 
   mobMoveChoiceFinish:
     pop R7
@@ -1424,8 +1626,571 @@ chaseCondition:
     rts
 
   chaseTrue:
-    loadn R2, #1 ; this is chase bool false
+    call algorithmLineMain ; will check for walls and return bool
     rts
+
+; R0 = addr to mob
+; R2 = bool
+algorithmLineMain:
+  push R1
+  push R3
+  push R4
+  push R5
+  push R6
+  push R7
+
+  loadn R3, #6
+  add R5, R3, R0 ; addr to mobcoord
+  loadi R3, R5 ; mob coord
+  
+  inc R5
+  inc R5
+  inc R5 ; addr to side
+  loadi R4, R5
+  loadn R5, #1
+  cmp R4, R5
+  jeq algorithmLineMainRightSide
+
+  dec R3 ; coord to mob's left head
+  jmp algorithmLineMainDecision
+
+  algorithmLineMainRightSide:
+    inc R3 ; coord to mob's right head
+  
+  algorithmLineMainDecision:
+    loadn R7, #40
+    mod R4, R3, R7 ; mob.x
+    div R5, R3, R7 ; mob.y
+
+    load R1, playerCoordInMap
+    mod  R6, R1, R7 ; player.x
+    div R7, R1, R7 ; player.y
+
+    ; stores values
+    store lineAlgorithmMobX, R4 ; stores mob.x
+    store lineAlgorithmMobY, R5 ; stores mob.y
+    store lineAlgorithmPlayerX, R6 ; stores player.x
+    store lineAlgorithmPlayerY, R7 ; stores player.y
+
+    cmp R4, R6 ; if mob.x > player.x
+    jel algorithmLineMainDecisionMobLesserX
+
+    cmp R5, R7 ; if mob.y > p.y
+    jel algorithmLineMainDecisionMobGreaterXLesserY
+
+    ; first test
+    loadn R3, #1 ; to compare with bool
+    load R1, playerCoordInMap
+    inc R1 ; aiming at player's right face
+    call algorithmLine ; will return bool
+    cmp R2, R3 ; if equal, finish, else, next call
+    jeq algorithmLineMainFinish
+
+    loadn R2, #40
+    add R1, R1, R2 ; aiming at player's right leg
+    call algorithmLine ; will return bool
+    cmp R2, R3 ; if equal, finish, else, next call
+    jeq algorithmLineMainFinish
+
+    dec R1 ; aiming at player's left leg
+    call algorithmLine ; will return bool
+    jmp algorithmLineMainFinish ; last call is done, finish
+
+    algorithmLineMainDecisionMobGreaterXLesserY:
+      ; moby has to be lesser than pl.y
+      cmp R5, R7 ; if mob.y < p.y
+      jeg algorithmLineMainDecisionMobGreaterXEqualY
+      
+      ; first test
+      loadn R3, #1 ; to compare with bool
+      load R1, playerCoordInMap ; aiming at player's left face
+      call algorithmLine ; will return bool
+      cmp R2, R3 ; if equal, finish, else, next call
+      jeq algorithmLineMainFinish
+
+      inc R1 ; aiming at player's right face
+      call algorithmLine ; will return bool
+      cmp R2, R3 ; if equal, finish, else, next call
+      jeq algorithmLineMainFinish
+
+      loadn R2, #40
+      add R1, R1, R2 ; aiming at player's right leg
+      call algorithmLine ; will return bool
+      jmp algorithmLineMainFinish ; last call is done, finish
+
+    algorithmLineMainDecisionMobGreaterXEqualY:
+      ; first test
+      loadn R3, #1 ; to compare with bool
+      load R1, playerCoordInMap 
+      inc R1 ; aiming at player's right face
+      call algorithmLine ; will return bool
+      cmp R2, R3 ; if equal, finish, else, next call
+      jeq algorithmLineMainFinish
+
+      loadn R2, #40
+      add R1, R1, R2 ; aiming at player's right leg
+      call algorithmLine ; will return bool
+      jmp algorithmLineMainFinish ; last call is done, finish
+
+
+    algorithmLineMainDecisionMobLesserX:
+      ; mob.x has to be lesser than play.x
+      cmp R4, R6 ; it has to be lesser, else jmp to next condition
+      jeg algorithmLineMainDecisionMobEqualX
+
+      ; test mob.y > play.y
+      cmp R5, R7 ; if mob.y > p.y
+      jel algorithmLineMainDecisionMobLesserXLesserY
+
+      ; first test
+      loadn R3, #1 ; to compare with bool
+      load R1, playerCoordInMap ; aiming at player's left face
+      call algorithmLine ; will return bool
+      cmp R2, R3 ; if equal, finish, else, next call
+      jeq algorithmLineMainFinish
+
+      loadn R2, #40
+      add R1, R1, R2 ; aiming at player's left leg
+      call algorithmLine ; will return bool
+      cmp R2, R3 ; if equal, finish, else, next call
+      jeq algorithmLineMainFinish
+
+      inc R1 ; aiming at player's right leg
+      call algorithmLine ; will return bool
+      jmp algorithmLineMainFinish ; last call is done, finish
+
+      algorithmLineMainDecisionMobLesserXLesserY:
+        ; moby has to be lesser than pl.y
+        cmp R5, R7 ; if mob.y < p.y
+        jeg algorithmLineMainDecisionMobLesserXEqualY
+        
+        ; first test
+        loadn R3, #1 ; to compare with bool
+        load R1, playerCoordInMap ; aiming at player's left face
+        call algorithmLine ; will return bool
+        cmp R2, R3 ; if equal, finish, else, next call
+        jeq algorithmLineMainFinish
+
+        inc R1 ; aiming at player's right face
+        call algorithmLine ; will return bool
+        cmp R2, R3 ; if equal, finish, else, next call
+        jeq algorithmLineMainFinish
+
+        loadn R2, #39
+        add R1, R1, R2 ; aiming at player's left leg
+        call algorithmLine ; will return bool
+        jmp algorithmLineMainFinish ; last call is done, finish
+
+      algorithmLineMainDecisionMobLesserXEqualY:
+        ; first test
+        loadn R3, #1 ; to compare with bool
+        load R1, playerCoordInMap 
+        inc R1 ; aiming at player's right face
+        call algorithmLine ; will return bool
+        cmp R2, R3 ; if equal, finish, else, next call
+        jeq algorithmLineMainFinish
+
+        loadn R2, #40
+        add R1, R1, R2 ; aiming at player's right leg
+        call algorithmLine ; will return bool
+        jmp algorithmLineMainFinish ; last call is done, finish
+
+    
+    algorithmLineMainDecisionMobEqualX:
+      ; test mob.y > play.y
+      cmp R5, R7 ; if mob.y > p.y
+      jel algorithmLineMainDecisionMobEqualXLesserY
+
+      ; first test
+      loadn R3, #1 ; to compare with bool
+      load R1, playerCoordInMap 
+      loadn R2, #40
+      add R1, R1, R2 ; aiming at player's left leg
+      call algorithmLine ; will return bool
+
+      cmp R2, R3 ; if equal, finish, else, next call
+      jeq algorithmLineMainFinish
+
+      ; second test
+      inc R1 ; player's right leg
+      call algorithmLine ; will return bool
+      jmp algorithmLineMainFinish ; last call is done, finish
+
+      algorithmLineMainDecisionMobEqualXLesserY:
+        ; first test
+        loadn R3, #1 ; to compare with bool
+        load R1, playerCoordInMap ; aims at player's right face
+        call algorithmLine ; will return bool
+        cmp R2, R3 ; if equal, finish, else, next call
+        jeq algorithmLineMainFinish
+
+        ; second test
+        inc R1 ; face leg
+        call algorithmLine ; will return bool
+        jmp algorithmLineMainFinish ; last call is done, finish
+
+  algorithmLineMainFinish:
+    pop R7
+    pop R6
+    pop R5
+    pop R4
+    pop R3
+    pop R1
+    rts
+
+
+algorithmLine:
+  push R1
+  push R3
+  push R4
+  push R5
+  push R6
+  push R7
+
+  ; we need to find abs(player.x - mob.x) and abs(player.y - mob.y)
+  cmp R6, R4 ; R6 = player.x, R4 = mob.x
+  jle algorithmLineMobGreaterX
+
+  sub R4, R6, R4 ; abs(player.x - mob.x)
+  jmp algorithmLineTestAbsY
+
+  algorithmLineMobGreaterX:
+    sub R4, R4, R6 ; abs(player.x - mob.x)
+
+  algorithmLineTestAbsY:
+    cmp R7, R5 ; R7 = player.y, R5 = mob.y
+    jle algorithmLineMobGreaterY
+
+    sub R5, R7, R5 ; abs(player.y - mob.y)
+    cmp R4, R5 ; if difX > difY, horizontal line,
+               ; else. vertical
+    jgr algorithmLineH
+    jel algorithmLineV
+
+
+  algorithmLineMobGreaterY:
+    sub R5, R5, R7 ; abs(player.y - mob.y)
+    cmp R4, R5 ; if difX > difY, horizontal line,
+               ; else. vertical
+    jgr algorithmLineH
+    jel algorithmLineV
+
+  algorithmLineH:
+    load R4, lineAlgorithmMobX
+    load R5, lineAlgorithmMobY
+    load R6, lineAlgorithmPlayerX
+    load R7, lineAlgorithmPlayerY
+
+    cmp R4, R6 ; if mob.x > player.x, exchange values
+    jel algorithmLineHSetup
+
+    ; exchange values
+    mov R4, R6 ; mob.x = player.x
+    load R6, lineAlgorithmMobX ; player.x = mob.x
+    mov R5, R7 ; mob.y = player.y
+    load R7, lineAlgorithmMobY ; player.y = mob.y
+
+    algorithmLineHSetup:
+      sub R1, R6, R4 ; this is dx
+      sub R2, R7, R5 ; this is dy, might be negative
+
+      ; R5 (mob.y), R4 mob.x will still be used, the rest wont
+      ; choosing dir
+      mov R3, R2
+      shiftr0 R3, #15
+      loadn R6, #1
+      cmp R3, R6 ; if equal dir = -1, else 1
+      jne algorithmLineHSetupDirPos
+
+      loadn R3, #65535 ; dir = -1
+      jmp algorithmLineHSetupDyMult
+
+      algorithmLineHSetupDirPos:
+        loadn R3, #1 ; dir = 1
+
+      algorithmLineHSetupDyMult:
+        store lineAlgorithmDir, R3
+
+        mul R2, R2, R3 ; dy *= dir
+
+        loadn R6, #0
+        cmp R1, R6 ; if dx not 0, go on 
+                   ; else, finish
+        jeq algorithmLineHStraight
+        
+        ; R5 (mob.y will now be y)
+        ; p = 2*dy - dx
+        mov R6, R2 ; R2 = dy
+        loadn R7, #2
+        mul R6, R6, R7
+        sub R6, R6, R1 ; R6 = p
+        store lineAlgorithmP, R6 ; store p
+        store lineAlgorithmY, R5 ; store y as mob.y
+
+        ; will use 
+        ; R0 = mob addr, R1 = dx, R2 = dy, R4 = mob.x R5 = counter
+        loadn R5, #0 ; while < dx+1
+        algorithmLineHLoop:
+          cmp R5, R1 ; must be eq or le
+          jgr algorithmLineBoolTrue
+
+          ; find coord to outchar
+          add R6, R4, R5 ; (mob.x + counter)
+          load R7, lineAlgorithmY
+          loadn R3, #40
+          mul R3, R3, R7
+          add R3, R3, R6 ; mob.x + counter + 40*y
+
+          ; check mapProp
+          loadn R6, #mapProp
+          add R3, R3, R6 ; idx to coord in map
+          loadi R3, R3
+          loadn R6, #1
+          cmp R3, R6 ; check if wall
+          jeq algorithmLineBoolFalse ; if equal, bool false and finish
+
+          ; will now use
+          ; p, R7 = y, dir, R1 = dx, R2 = dy
+          ; can be used R3, R6, R7
+          load R3, lineAlgorithmP
+          shiftr0 R3, #15 ; gets sign bit
+          loadn R6, #0
+          cmp R6, R3 ; if R5 is 0 (positive num)
+          jne algorithmLineHLoopPAdd
+          
+          ; p = p - 2*dx
+          load R6, lineAlgorithmP
+          add R7, R1, R1 ; 2*dx
+          sub R6, R6, R7 ; p = p -2*dx
+          store lineAlgorithmP, R6
+
+          ; y += dir
+          ; need to hold R0, R1, R2, R4, R5, R6, R7
+          ; R7 restored at the end, we used the R for another thing
+          load R3, lineAlgorithmDir
+          loadn R7, #1
+          cmp R3, R7 ; if not equal it's negative
+          jne algorithmLineHLoopDirNeg
+
+          load R3, lineAlgorithmY
+          add R7, R3, R7
+          store lineAlgorithmY, R7
+          jmp algorithmLineHLoopPAdd
+
+          algorithmLineHLoopDirNeg:
+            load R3, lineAlgorithmY
+            sub R7, R3, R7
+            store lineAlgorithmY, R7
+
+          algorithmLineHLoopPAdd:
+            load R6, lineAlgorithmP
+            add R7, R2, R2 ; R7 = 2*dy dy can be neg
+            add R6, R6, R7 ; p = p + 2*dy
+            store lineAlgorithmP, R6
+
+            inc R5 ; increments counter
+            jmp algorithmLineHLoop
+
+        algorithmLineHStraight:
+            ; R5 (mob.y will now be y)
+            store lineAlgorithmY, R5 ; store y as mob.y
+
+          ; will use 
+          ; R0 = mob addr, R1 = dx, R2 = dy, R4 = mob.x R5 = counter
+          loadn R5, #0 ; while < dx+1
+          algorithmLineHStraightLoop:
+            cmp R5, R1 ; must be eq or le
+            jgr algorithmLineBoolTrue
+
+            ; find coord to outchar
+            add R6, R4, R5 ; (mob.x + counter)
+            load R7, lineAlgorithmY
+            loadn R3, #40
+            mul R3, R3, R7
+            add R3, R3, R6 ; mob.x + counter + 40*y
+
+            ; check mapProp
+            loadn R6, #mapProp
+            add R3, R3, R6 ; idx to coord in map
+            loadi R3, R3
+            loadn R6, #1
+            cmp R3, R6 ; check if wall
+            jeq algorithmLineBoolFalse ; if equal, bool false and finish
+
+            inc R5 ; increments counter
+            jmp algorithmLineHStraightLoop
+
+
+    algorithmLineBoolFalse:
+      loadn R2, #0
+      jmp algorithmLineFinish
+
+    algorithmLineBoolTrue:
+      loadn R2, #1
+      jmp algorithmLineFinish
+
+    algorithmLineV:
+      load R4, lineAlgorithmMobX
+      load R5, lineAlgorithmMobY
+      load R6, lineAlgorithmPlayerX
+      load R7, lineAlgorithmPlayerY
+
+      cmp R5, R7 ; if mob.y > player.y, exchange values
+      jel algorithmLineVSetup
+
+      ; exchange values
+      mov R4, R6 ; mob.x = player.x
+      load R6, lineAlgorithmMobX ; player.x = mob.x
+      mov R5, R7 ; mob.y = player.y
+      load R7, lineAlgorithmMobY ; player.y = mob.y
+      store lineAlgorithmMobX, R4
+      store lineAlgorithmMobY, R5
+      store lineAlgorithmPlayerX, R6
+      store lineAlgorithmPlayerY, R7
+
+      algorithmLineVSetup:
+        sub R1, R6, R4 ; this is dx
+        sub R2, R7, R5 ; this is dy, might be negative
+
+        ; R5 (mob.y), R4 mob.x will still be used, the rest wont
+        ; choosing dir
+        mov R3, R1
+        shiftr0 R3, #15
+        loadn R6, #1
+        cmp R3, R6 ; if equal dir = -1, else 1
+        jne algorithmLineVSetupDirPos
+
+        loadn R3, #65535 ; dir = -1
+        jmp algorithmLineVSetupDyMult
+
+        algorithmLineVSetupDirPos:
+          loadn R3, #1 ; dir = 1
+
+        algorithmLineVSetupDyMult:
+          store lineAlgorithmDir, R3
+
+          mul R1, R1, R3 ; dx *= dir
+
+          loadn R6, #0
+          cmp R1, R6 ; if dy not 0, go on 
+                    ; else, finish
+          jeq algorithmLineVStraight
+          
+          ; R4 (mob.x will now be x)
+          ; p = 2*dx - dy
+          mov R6, R1 ; R1 = dx
+          loadn R7, #2
+          mul R6, R6, R7
+          sub R6, R6, R2 ; R6 = p
+          store lineAlgorithmP, R6 ; store p
+          store lineAlgorithmX, R4 ; store x as mob.x
+
+          ; will use 
+          ; R0 = mob addr, R1 = dx, R2 = dy, R4 = mob.y R5 = counter
+          load R4, lineAlgorithmMobY
+          loadn R5, #0 ; while < dy+1
+          algorithmLineVLoop:
+            cmp R5, R2 ; must be eq or le
+            jgr algorithmLineBoolTrue
+
+            ; find coord 
+            add R6, R4, R5 ; (mob.y + counter)
+            loadn R3, #40
+            mul R3, R3, R6 ; (mob.y + counter)*40
+            load R7, lineAlgorithmX
+            add R3, R7, R3 ; (mob.y + counter)*40 + x
+
+            ; check mapProp
+            loadn R6, #mapProp
+            add R3, R3, R6 ; idx to coord in map
+            loadi R3, R3
+            loadn R6, #1
+            cmp R3, R6 ; check if wall
+            jeq algorithmLineBoolFalse ; if equal, bool false and finish
+
+            ; will now use
+            ; p, R7 = x, dir, R1 = dx, R2 = dy
+            ; can be used R3, R6, R7
+            load R3, lineAlgorithmP
+            shiftr0 R3, #15 ; gets sign bit
+            loadn R6, #0
+            cmp R6, R3 ; if R5 is 0 (positive num)
+            jne algorithmLineVLoopPAdd
+
+            ; p = p - 2*dy
+            load R6, lineAlgorithmP
+            add R7, R2, R2 ; 2*dy
+            sub R6, R6, R7 ; p = p -2*dy
+            store lineAlgorithmP, R6
+
+            ; x += dir
+            ; need to hold R0, R1, R2, R4, R5, R6, R7
+            ; R7 restored at the end, we used the R for another thing
+            load R3, lineAlgorithmDir
+            loadn R7, #1
+            cmp R3, R7 ; if not equal it's negative
+            jne algorithmLineVLoopDirNeg
+
+            load R3, lineAlgorithmX
+            add R7, R3, R7
+            store lineAlgorithmX, R7
+            jmp algorithmLineVLoopPAdd
+
+            algorithmLineVLoopDirNeg:
+              load R3, lineAlgorithmX
+              sub R7, R3, R7
+              store lineAlgorithmX, R7
+
+            algorithmLineVLoopPAdd:
+              load R6, lineAlgorithmP
+              add R7, R1, R1 ; R7 = 2*dx, dx can be neg
+              add R6, R6, R7 ; p = p + 2*dx
+              store lineAlgorithmP, R6
+
+              inc R5 ; increments counter
+              jmp algorithmLineVLoop
+
+          algorithmLineVStraight:
+          ; R4 (mob.x will now be x)
+          store lineAlgorithmX, R4 ; store x as mob.x
+
+          ; will use 
+          ; R0 = mob addr, R1 = dx, R2 = dy, R4 = mob.y R5 = counter
+          load R4, lineAlgorithmMobY
+          loadn R5, #0 ; while < dy+1
+          algorithmLineVStraightLoop:
+            cmp R5, R2 ; must be eq or le
+            jgr algorithmLineBoolTrue
+
+            ; find coord 
+            add R6, R4, R5 ; (mob.y + counter)
+            loadn R3, #40
+            mul R3, R3, R6 ; (mob.y + counter)*40
+            load R7, lineAlgorithmX
+            add R3, R7, R3 ; (mob.y + counter)*40 + x
+      
+            ; check mapProp
+            loadn R6, #mapProp
+            add R3, R3, R6 ; idx to coord in map
+            loadi R3, R3
+            loadn R6, #1
+            cmp R3, R6 ; check if wall
+            jeq algorithmLineBoolFalse ; if equal, bool false and finish
+
+            inc R5 ; increments counter
+            jmp algorithmLineVStraightLoop
+
+
+
+    algorithmLineFinish:
+      pop R7
+      pop R6
+      pop R5
+      pop R4
+      pop R3
+      pop R1
+      rts
+
 
 
 DelayMove:
@@ -2114,7 +2879,15 @@ skinPlayerFrontStop: var #4
   static skinPlayerFrontStop + #2, #771 ; right leg
   static skinPlayerFrontStop + #3, #772 ; left leg
 
-mob1: var #15
+; mob inverted 
+; left face : 2826
+; right face: 2827
+; right leg: 2828
+; left leg: 2829
+; wings: 2062
+
+
+mob1: var #16
   static mob1 + #0, #0 ; if it's active or not
   static mob1 + #1, #2822 ; left face skin
   static mob1 + #2, #2823 ; right face skin
@@ -2130,6 +2903,7 @@ mob1: var #15
   static mob1 + #12, #0 ; number of script
   static mob1 + #13, #50 ; alertTimer 1
   static mob1 + #14, #65000 ; alertTimer 2
+  static mob1 + #15, #0 ; last movememt, vertical or horizontal
 
 
 ; starts at 841
@@ -2149,6 +2923,37 @@ curLevel: var #1
 slideCounter: var #2
   static slideCounter + #0, #20000
   static slideCounter + #1, #65000
+
+
+lineAlgorithmMobX: var #1
+  static lineAlgorithmMobX, #0 ; mob.x
+
+lineAlgorithmMobY: var #1
+  static lineAlgorithmMobY, #0 ; mob.y
+  
+lineAlgorithmPlayerX: var #1
+  static lineAlgorithmPlayerX, #0 ; player.x
+  
+lineAlgorithmPlayerY: var #1
+  static lineAlgorithmPlayerY, #0 ; player.y
+
+lineAlgorithmDx: var #1
+  static lineAlgorithmDx, #0 ; dx
+  
+lineAlgorithmDy: var #1
+  static lineAlgorithmDy, #0 ; dy
+
+lineAlgorithmDir: var #1
+  static lineAlgorithmDir, #0 ; dir
+  
+lineAlgorithmX: var #1
+  static lineAlgorithmX, #0 ; x
+
+lineAlgorithmY: var #1
+  static lineAlgorithmY, #0 ; y
+
+lineAlgorithmP: var #1
+  static lineAlgorithmP, #0 ; p
 
 
 ; stores min and max coord to be rendered
