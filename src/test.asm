@@ -1,9 +1,14 @@
 loadn R0, #0
-loadn R1, #1
+loadn R1, #5
 
-sub R0, R0, R1
-loadn R2, #40
-mod R0, R1, R2 
+sub R1, R0, R1
+not R2, R1
+inc R2
+loadn R3, #40
+div R2, R2, R3
+inc R2
+mul R2, R2, R3
+add R2, R2, R1
 
 
 

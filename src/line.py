@@ -30,7 +30,15 @@ def drawLineH(xmob, ymob, xplayer, yplayer):
                 y += dir
                 p = p - 2*dx
             p = p + 2*dy
-    #bool = True
+    
+    else: # straight line
+        for i in range(dx +1):
+            print(xmob+i, y)
+            #putPixel(x, ymob + i)
+            #if mapProp == 1:
+             #   bool = False
+              #  jmp fora
+    #bool = true
 
 def drawLineV(xmob, ymob, xplayer, yplayer):
     if ymob > yplayer:

@@ -413,6 +413,10 @@ scriptAlert:
   add R1, R0, R1 ; addr to mob is side looking
   storei R1, R5 ; stores 0, facing left
 
+  inc R1 ; addr to delaymove 1
+  loadn R5, #10
+  storei R1, R5
+
   jmp scriptAlertResetScript
 
   scriptAlertTestSideRightEnd:
@@ -438,44 +442,20 @@ scriptAlert:
     add R1, R0, R1 ; addr to mob is side looking
     storei R1, R5 ; stores 1, facing right
 
+    inc R1 ; addr to delaymove 1
+    loadn R5, #10
+    storei R1, R5
+
   scriptAlertResetScript:
     ; scriptAlert[0] = -1
     loadn R5, #65535
     storei R3, R5
 
-    ; restores background
-    loadn R1, #6
-    add R1, R1, R0 ; addr to mob.coord
-    loadi R1, R1
-    loadn R5, #40
-    add R1, R1, R5 ; 1 coord down
-    inc R1 ; 1 to right
-
-    ; check min coord render
-    loadn R4, #renderVar
-    loadi R2, R4 ; min rendervar
-    cmp R1, R2 ; must be eq or gr
-    jle scriptAlertFinish
-
-    ; check max coord render
-    inc R4
-    loadi R2, R4 ; max rendervar
-    cmp R1, R2 ; must be le
-    jeg scriptAlertFinish
-
-    ; get pixel info
-    loadn R2, #mapTotal
-    add R2, R1, R2 ; addr pix info
-    loadi R2, R2
-
-    load R3, renderVar
-    sub R1, R1, R3 ; coord render
-    outchar R2, R1
+    
     jmp scriptAlertFinish  
 
   scripAlertChoice:
-    ; we'll make a rand number, mob.coord + player.coord + mob.side 
-    ; + R7 + R6 + R5
+    ; we'll make a rand number, (mob.coord + player.coord + mob.side)*11 + 19
     loadn R1, #6
     add R1, R1, R0
     loadi R1, R1 ; mob.coord
@@ -486,9 +466,10 @@ scriptAlert:
 
     load R2, playerCoordInMap
     add R1, R1, R2 ; mob.coord + side + player.coord
-    add R1, R1, R5
+    loadn R5, #11
+    loadn R6, #19
+    mul R1, R1, R5
     add R1, R1, R6
-    add R1, R1, R7 ; mob.coord + side + player.coord + R5 + R6 + R7
 
     ; I. move or turn around? R1 mod 2; move = 1/2; turn = 1/2
     loadn R7, #2
@@ -499,12 +480,11 @@ scriptAlert:
     jeq scriptAlertChoiceTurn
 
     ; II. if movement, how much? Each number means two steps
-    loadn R7, #4
+    loadn R7, #3
     mod R2, R1, R7 ; R2 = number of moves + 1
     inc R2
 
     ; III. which sides? up_right != right_up
-    breakp
     loadn R7, #7
     mod R3, R1, R7
     loadn R7, #0
@@ -582,8 +562,16 @@ scriptAlert:
       mod R5, R1, R2 ; (totalSum mod totalMoves) + 1 
       inc R5
       sub R6, R2, R5 ; totalMoves - R5
-      add R5, R5, R5
-      add R6, R6, R6 ; mult both by 2
+      store scriptAlertCurCoordSum, R5
+
+      loadn R5, #3
+      mul R6, R6, R5 ; secondMove * 3
+      load R5, scriptAlertCurCoordSum
+      store scriptAlertCurCoordSum, R6
+
+      loadn R6, #3
+      mul R5, R5, R6 ; firstMove * 3
+      load R6, scriptAlertCurCoordSum ; mult both by 3
 
     ; V. side mob will end up facing
     loadn R7, #2
@@ -621,7 +609,7 @@ scriptAlert:
     cmp R3, R2 ; check what side it is
     jeq scriptAlertChoiceFirstMoveDown
 
-    ; IF THIS DOESN'T WORK, I CAN TRY (curCoord/40 + 1)*40 -2  WHEN INVALID!!!!!!!
+    ; IF THIS DOESN'T WORK, I CAN TRY (initialCoord/40 + 1)*40 -2  WHEN INVALID!!!!!!!
     scriptAlertChoiceFirstMoveRight:
       dec R1 ; addr where we'll store a coord
       loadn R3, #6
@@ -629,13 +617,12 @@ scriptAlert:
       loadi R2, R2 ; mob coord
       
       ; we need to test if new coord is valid
-      ; if (coord) mod 40 > 30; if 8 steps to the right, 30 is the last valid x position, 30 + 8 = 38
-      ; and if (coord + move + 1) mod 40 <= 7; if mob.x = 31 + 8 (movement) + 1 = 40, mod 40 = 0; mob.x = 38 + 8 (movement) + 1 = 47, mod 40 = 7
+      ; if first pos mod 40 > 29: (29 +9 = 38) AND (last pos mod 40 > 38 OR last pos mod 40 < 29)
       ; invalid
       loadn R3, #40
       mod R2, R2, R3 ; coord mod 40
-      loadn R3, #30
-      cmp R2, R3 ; (coord) mod 40 > 30 if eq or le, valid
+      loadn R3, #29
+      cmp R2, R3 ; (coord) mod 40 > 29 if eq or le, valid
                  ; else, next test
       jel scriptAlertChoiceFirstMoveRightValid
 
@@ -643,26 +630,35 @@ scriptAlert:
       add R2, R2, R0 ; addr to mob coord
       loadi R2, R2 ; mob coord
       add R2, R2, R5 ; add movement
-      inc R2 ; +1
       store scriptAlertCurCoordSum, R2
       loadn R3, #40
-      mod R3, R2, R3 ; (coord + move + 1) mod 40 <= 7
-      loadn R2, #7
-      cmp R3, R2 ; if (coord + move + 1) mod 40 <= 7, invalid
+      mod R3, R2, R3 ; (coord + move) mod 40 > 38
+      loadn R2, #38
+      cmp R3, R2 ; if (coord + move) mod 40 > 38, invalid
+                 ; else, test < 29
+      jgr scriptAlertChoiceFirstMoveRightInvalid ; if greater, invalid
+
+      loadn R2, #29
+      cmp R3, R2 ; if (coord + move) mod 40 < 29, invalid
                  ; else, valid
-      jgr scriptAlertChoiceFirstMoveRightValid ; if greater, valid
+      jeg scriptAlertChoiceFirstMoveRightValid
 
-      ; Coord is invalid here
-      ; if we sub (result of last mod) and dec 2 from (coord + move), we get a valid coord
-      ; we have to take mob.coord again
-      load R2, scriptAlertCurCoordSum
-      sub R2, R2, R3 ; subs mod from coord sum
-      dec R2
-      dec R2 ; (coord + move + 1) + (- mod result - 2)
+      scriptAlertChoiceFirstMoveRightInvalid:
+        ; Coord is invalid here
+        ; (initialCoord/40 + 1)*40 -2
+        ; we have to take mob.coord again
+        load R2, scriptAlertCurCoordSum
+        sub R2, R2, R5 ; sub movement
+        loadn R3, #40
+        div R2, R2, R3 ; coord / 40
+        inc R2
+        mul R2, R2, R3 ; (coord / 40 +1)*40
+        dec R2
+        dec R2 ; -2
 
-      storei R1, R2
+        storei R1, R2
 
-      jmp scriptAlertChoiceGenerateScriptII        
+        jmp scriptAlertChoiceGenerateScriptII        
 
       scriptAlertChoiceFirstMoveRightValid:
         ; find new coord
@@ -684,13 +680,12 @@ scriptAlert:
       loadi R2, R2 ; mob coord
       
       ; we need to test if new coord is valid
-      ; if (coord) mod 40 < 9; mob.x = 9 is last 100% valid position, 9 - 8 = 1, last valid mob.x position 
-      ; and if (coord - move - 1) mod 40 >= 32; if mob.x = 8 - 8 (movement) - 1 mod 40 = 39; mob.x = 1 - 8 (movement) - 1 mod 40 = 32
+      ; if first pos < 10 (10 + 9 = 1) AND (last pos <1 OR last pos >10)
       ; invalid
       loadn R3, #40
       mod R2, R2, R3 ; coord mod 40
-      loadn R3, #9
-      cmp R2, R3 ; (coord) mod 40 < 9 if eq or gr, valid
+      loadn R3, #10
+      cmp R2, R3 ; (coord) mod 40 < 10 if eq or gr, valid
                  ; else, next test
       jeg scriptAlertChoiceFirstMoveLeftValid
 
@@ -698,64 +693,60 @@ scriptAlert:
       add R2, R2, R0 ; addr to mob coord
       loadi R2, R2 ; mob coord
       sub R2, R2, R5 ; subs movement
-      dec R2 ; -1
       store scriptAlertCurCoordSum, R2 ; stores for future use
       loadn R3, #40
-      mod R3, R2, R3 ; (coord - move - 1) mod 40 >= 32
-      loadn R2, #32
-      cmp R3, R2 ; if (coord - move - 1) mod 40 >= 32, invalid
+      mod R3, R2, R3 ; (coord - move) mod 40 < 1
+      loadn R2, #1
+      cmp R3, R2 ; if (coord - move) mod 40 < 1, invalid
+                 ; else, test > 10
+      jle scriptAlertChoiceFirstMoveLeftInvalid ; if lesser, invalid
+
+      loadn R2, #10
+      cmp R3, R2 ; if (coord - move) mod 40 > 10, invalid
                  ; else, valid
-      jle scriptAlertChoiceFirstMoveLeftValid ; if lesser, valid
+      jel scriptAlertChoiceFirstMoveLeftValid
 
-      ; Coord is invalid here
-      ; if 0 or neg: coordSum + mod result + 1
-      ; else (if positive): coordSum + (40 - mod result) + 1
-      ; we have to take mob.coord again
-      load R2, scriptAlertCurCoordSum ; (coord - move - 1)
-
-      ; check if it's 0 or negative
-      loadn R3, #0
-      cmp R2, R3 
-      jeq scriptAlertChoiceFirstMoveLeftInvalidZero
-
-      ; check if negative
-      shiftr0 R2, #15
-      loadn R3, #1
-      cmp R2, R3
-      jeq scriptAlertChoiceFirstMoveLeftInvalidNeg
-      jne scriptAlertChoiceFirstMoveLeftValid
-
-      scriptAlertChoiceFirstMoveLeftInvalidZero:
+      scriptAlertChoiceFirstMoveLeftInvalid:
+        ; Coord is invalid here
+        ; if negative or 0: coord = 1
+        ; else if positive: (curCoord/40 +1)*40 + 1
         ; we have to take mob.coord again
-        load R2, scriptAlertCurCoordSum ; (coord - move - 1)
-        ; it's positive and different than 0
-        loadn R3, #40
-        mod R2, R2, R3 ; R2 = mod result
-        sub R3, R3, R2 ; R2 = 40 - mod result
-        load R2, scriptAlertCurCoordSum ; (coord - move - 1)
-        add R3, R2, R3 
-        inc R3 ; (coord - move - 1) + (40 - mod result) + 1
+        load R2, scriptAlertCurCoordSum ; (coord - move)
 
+        ; check if it's 0 or negative
+        loadn R3, #0
+        cmp R2, R3 
+        jeq scriptAlertChoiceFirstMoveLeftInvalidZeroNeg
+
+        ; check if negative
+        shiftr0 R2, #15
+        loadn R3, #1
+        cmp R2, R3
+        jeq scriptAlertChoiceFirstMoveLeftInvalidZeroNeg
+
+        ; invalid positive
+        load R2, scriptAlertCurCoordSum
+        loadn R3, #40
+        div R2, R2, R3 ; curCoord/40
+        inc R2 ; curCoord/40 +1
+        mul R2, R2, R3 ; (curCoord/40 +1)*40
+        inc R2 ; (curCoord/40 +1)*40 + 1
+
+        storei R1, R2
+        
+        jmp scriptAlertChoiceGenerateScriptII
+
+      scriptAlertChoiceFirstMoveLeftInvalidZeroNeg:
+        ; coord = 1
+        loadn R3, #1
         storei R1, R3
 
         jmp scriptAlertChoiceGenerateScriptII
 
-      scriptAlertChoiceFirstMoveLeftInvalidNeg:
-        ; Coord is invalid here
-        ; if 0 or neg: coordSum + mod result + 1
-        load R2, scriptAlertCurCoordSum ; (coord - move - 1)
-        loadn R3, #40
-        mod R3, R2, R3 ; mod result
-        add R2, R2, R3
-        inc R2 ; coordSum + modResult + 1
-        storei R1, R2
-
-        jmp scriptAlertChoiceGenerateScriptII
-
       scriptAlertChoiceFirstMoveLeftValid:
-        ; find new coord
-        loadn R2, #6
-        add R2, R2, R0 ; addr to mob coord
+        ; load coord
+        loadn R3, #6
+        add R2, R0, R3 ; addr to mob coord
         loadi R2, R2 ; mob coord
         sub R2, R2, R5 ; subs movement
         
@@ -764,27 +755,22 @@ scriptAlert:
         jmp scriptAlertChoiceGenerateScriptII
       
     scriptAlertChoiceFirstMoveUp:
-    ;breakp
       dec R1 ; addr where we'll store a coord
       loadn R3, #6
       add R2, R0, R3 ; addr to mob coord
       loadi R2, R2 ; mob coord
       
       ; we need to test if new coord is valid
-      ; if coord - 40*move < 1: invalid
+      ; if coord - 40*move < 0: invalid
       loadn R3, #40
       mul R3, R3, R5 ; move*40
-      sub R2, R2, R3 ; coord - 40*move < 1: invalid
+      sub R2, R2, R3 ; coord - 40*move < 0: invalid
       store scriptAlertCurCoordSum, R2 ; store for future use
+      shiftr0 R2, #15 ; takes MSB
       loadn R3, #1
-      cmp R2, R3 ; if coord - 40*move < 1 and eq or gr than 0: invalid
-                 ; else, test negative
-      jle scriptAlertChoiceFirstMoveUpInvalid
 
-      ; check if negative
-      shiftr0 R2, #15
-      loadn R3, #1 
-      cmp R2, R3
+      cmp R2, R3 ; if equal, invalid
+                 ; else, valid
       jne scriptAlertChoiceFirstMoveUpValid
 
       ; compliment 2
@@ -793,10 +779,11 @@ scriptAlert:
       inc R2
 
       scriptAlertChoiceFirstMoveUpInvalid:
+        ; coordInvalid + (positive(coordInvalid)/40 + 1)*40
         loadn R3, #40
         div R2, R2, R3
         inc R2
-        mul R2, R2, R3 ; (positive(coordResult)/40 + 1)*40
+        mul R2, R2, R3 ; (positive(coordInvalid)/40 + 1)*40
         load R3, scriptAlertCurCoordSum
         add R2, R2, R3 ; + coordResult
 
@@ -826,12 +813,14 @@ scriptAlert:
       jel scriptAlertChoiceFirstMoveDownValid
 
       scriptAlertChoiceFirstMoveDownInvalid:
+        ; invalid - ((invalid - 1640)/40)*40 = valid
+        loadn R3, #1640
+        sub R2, R2, R3
         loadn R3, #40
         div R2, R2, R3
-        inc R2
-        mul R2, R2, R3 ; (positive(coordResult)/40 + 1)*40
+        mul R2, R2, R3 ; ((invalid -1640)/40)*40
         load R3, scriptAlertCurCoordSum
-        add R2, R2, R3 ; + coordResult
+        sub R2, R3, R2 ; invalid - ((invalid - 1640)/40)*40 
 
       scriptAlertChoiceFirstMoveDownValid:
         storei R1, R2
@@ -869,35 +858,43 @@ scriptAlert:
         dec R1 ; addr where we'll store a coord
         
         ; we need to test if new coord is valid
-        ; if (coord) mod 40 > 30; if 8 steps to the right, 30 is the last valid x position, 30 + 8 = 38
-        ; and if (coord + move + 1) mod 40 <= 7; if mob.x = 31 + 8 (movement) + 1 = 40, mod 40 = 0; mob.x = 38 + 8 (movement) + 1 = 47, mod 40 = 7
+        ; if first pos mod 40 > 29: (29 +9 = 38) AND (last pos mod 40 > 38 OR last pos mod 40 < 29)
         ; invalid
         loadn R3, #40
         mod R5, R2, R3 ; coord mod 40
-        loadn R3, #30
-        cmp R5, R3 ; (coord) mod 40 > 30 if eq or le, valid
-                   ; else, next test
+        loadn R3, #29
+        cmp R5, R3 ; (coord) mod 40 > 29 if eq or le, valid
+                 ; else, next test
         jel scriptAlertChoiceGenerateScriptIIRightValid
 
         add R3, R2, R6 ; add movement
-        inc R3 ; +1
         loadn R4, #40
-        mod R4, R3, R4 ; (coord + move + 1) mod 40 <= 7
-        loadn R5, #7
-        cmp R3, R5 ; if (coord + move + 1) mod 40 <= 7, invalid
-                  ; else, valid
-        jgr scriptAlertChoiceGenerateScriptIIRightValid ; if greater, valid
+        mod R4, R3, R4 ; (coord + move) mod 40 > 38
+        loadn R5, #38
+        cmp R4, R5 ; if (coord + move) mod 40 > 38, invalid
+                   ; else, test < 29
+        jgr scriptAlertChoiceGenerateScriptIIRightInvalid ; if greater, invalid
 
-        ; Coord is invalid here
-        ; if we sub (result of last mod) and dec 2 from (coord + move), we get a valid coord
-        ; we have to take mob.coord again
-        sub R3, R3, R4 ; subs mod from coord sum
-        dec R3
-        dec R3 ; (coord + move + 1) + (- mod result - 2)
+        loadn R5, #29
+        cmp R4, R5 ; if (coord + move) mod 40 < 29, invalid
+                   ; else, valid
+        jeg scriptAlertChoiceGenerateScriptIIRightValid
 
-        storei R1, R3
+        scriptAlertChoiceGenerateScriptIIRightInvalid:
+          ; Coord is invalid here
+          ; (initialCoord/40 + 1)*40 -2
+          ; we have to take mob.coord again
+          sub R3, R3, R6 ; subtract movement so we get initialcoord
+          loadn R4, #40
+          div R3, R3, R4 ; (initialCoord/40)
+          inc R4
+          mul R3, R3, R4 ; (initialCoord/40 + 1)*40
+          dec R3
+          dec R3 ; (initialCoord/40 + 1)*40 -2
 
-        jmp scriptAlertChoiceGenerateScriptIII       
+          storei R1, R3
+
+          jmp scriptAlertChoiceGenerateScriptIII       
 
         scriptAlertChoiceGenerateScriptIIRightValid:
           ; find coord
@@ -912,108 +909,105 @@ scriptAlert:
         dec R1 ; addr where we'll store a coord
         
         ; we need to test if new coord is valid
-        ; if (coord) mod 40 < 9; mob.x = 9 is last 100% valid position, 9 - 8 = 1, last valid mob.x position 
-        ; and if (coord - move - 1) mod 40 >= 32; if mob.x = 8 - 8 (movement) - 1 mod 40 = 39; mob.x = 1 - 8 (movement) - 1 mod 40 = 32
+        ; if first pos < 10 (10 + 9 = 1) AND (last pos <1 OR last pos >10)
         ; invalid
         loadn R4, #40
         mod R3, R2, R4 ; coord mod 40
-        loadn R5, #9
-        cmp R3, R5 ; (coord) mod 40 < 9 if eq or gr, valid
-                  ; else, next test
+        loadn R5, #10
+        cmp R3, R5 ; (coord) mod 40 < 10 if eq or gr, valid
+                   ; else, next test
         jeg scriptAlertChoiceGenerateScriptIILeftValid
 
         sub R3, R2, R6 ; subs movement
-        dec R3 ; -1
-        mod R4, R3, R4 ; (coord - move - 1) mod 40 >= 32
-        loadn R5, #32
-        cmp R4, R5 ; if (coord - move - 1) mod 40 >= 32, invalid
-                  ; else, valid
-        jle scriptAlertChoiceGenerateScriptIILeftValid ; if lesser, valid
-
-        ; Coord is invalid here
-        ; if 0 or neg: coordSum + mod result + 1
-        ; else (if positive): coordSum + (40 - mod result) + 1
-
-        ; check if it's 0 or negative
-        loadn R5, #0
-        cmp R3, R5 
-        jeq scriptAlertChoiceGenerateScriptIILeftInvalidZero
-
-        ; check if negative
-        mov R4, R3
-        shiftr0 R4, #15
+        mod R4, R3, R4 ; (coord - move) mod 40 < 1
         loadn R5, #1
-        cmp R4, R5
-        jeq scriptAlertChoiceGenerateScriptIILeftInvalidNeg
-        jne scriptAlertChoiceGenerateScriptIILeftValid
+        cmp R4, R5 ; if (coord - move) mod 40 < 1, invalid
+                   ; else, test > 10
+        jle scriptAlertChoiceGenerateScriptIILeftInvalid ; if lesser, invalid
 
-        scriptAlertChoiceGenerateScriptIILeftInvalidZero:
-          ; it's positive and different than 0
-          loadn R5, #40
-          mod R4, R3, R5 ; R4 = mod result
-          sub R4, R5, R4 ; R2 = 40 - mod result
-          add R3, R3, R4 
-          inc R3 ; (coord - move - 1) + (40 - mod result) + 1
-
-          storei R1, R3
-
-          jmp scriptAlertChoiceGenerateScriptIII
-
-        scriptAlertChoiceGenerateScriptIILeftInvalidNeg:
+        loadn R5, #10
+        cmp R4, R5 ; if (coord - move) mod 40 > 10, invalid
+                   ; else, valid
+        jel scriptAlertChoiceGenerateScriptIILeftValid
+      
+        scriptAlertChoiceGenerateScriptIILeftInvalid:
           ; Coord is invalid here
-          ; if 0 or neg: coordSum + mod result + 1
-          loadn R5, #40
-          mod R4, R3, R5 ; mod result
-          add R4, R3, R4
-          inc R4 ; coordSum + modResult + 1
-          storei R1, R4
+          ; if negative or 0: coord = 1
+          ; else if positive: (curCoord/40 +1)*40 + 1
+          
+          ; check if = 0
+          loadn R5, #0
+          cmp R3, R5 
+          jeq scriptAlertChoiceGenerateScriptIILeftInvalidZeroNeg
 
-          jmp scriptAlertChoiceGenerateScriptIII
+          ; check if negative
+          mov R4, R3
+          shiftr0 R4, #15
+          loadn R5, #1
+          cmp R4, R5
+          jeq scriptAlertChoiceGenerateScriptIILeftInvalidZeroNeg
+          
+          ; invalid positive
+          ; (curCoord/40 +1)*40 + 1
+          loadn R4, #40
+          div R3, R3, R4 ; curCoord/40
+          inc R3 ; curCoord/40 +1
+          mul R3, R3, R4 ; (curCoord/40 +1)*40
+          inc R3 ; (curCoord/40 +1)*40 + 1
 
-        scriptAlertChoiceGenerateScriptIILeftValid:
-          ; find new coord
-          sub R3, R2, R6
-
-          ; store it
           storei R1, R3
+
           jmp scriptAlertChoiceGenerateScriptIII
+
+          scriptAlertChoiceGenerateScriptIILeftInvalidZeroNeg:
+            ; min possible coord = 1
+            loadn R3, #1
+            storei R1, R3
+
+            jmp scriptAlertChoiceGenerateScriptIII
+
+          scriptAlertChoiceGenerateScriptIILeftValid:
+            ; find new coord
+            sub R3, R2, R6
+
+            ; store it
+            storei R1, R3
+            jmp scriptAlertChoiceGenerateScriptIII
 
       scriptAlertChoiceGenerateScriptIIUp:
         dec R1 ; addr where we'll store a coord
         
         ; we need to test if new coord is valid
-        ; if coord - 40*move < 1: invalid
+        ; if coord - 40*move < 0: invalid
         loadn R5, #40
         mul R3, R6, R5 ; move*40
-        sub R3, R2, R3 ; coord - 40*move < 1: invalid
+        sub R3, R2, R3 ; coord - 40*move < 0: invalid
         store scriptAlertCurCoordSum, R3 ; store for future use
+        shiftr0 R3, #15 ; takes MSB
         loadn R5, #1
-        cmp R3, R5 ; if coord - 40*move < 1 and eq or gr than 0: invalid
-                   ; else, test negative
-        jle scriptAlertChoiceGenerateScriptIIUpInvalid
-
-        ; check if negative
-        mov R4, R3
-        shiftr0 R4, #15
-        cmp R4, R5 ; if equal to 1
-        jne scriptAlertChoiceGenerateScriptIIUpValid ; not 0 or neg, valid, else, compliment 2
+        cmp R3, R5 ; if equal, invalid
+                   ; else, valid
+        jne scriptAlertChoiceGenerateScriptIIUpValid
 
         ; compliment 2
+        load R3, scriptAlertCurCoordSum
         not R3, R3
         inc R3
 
         scriptAlertChoiceGenerateScriptIIUpInvalid:
+          ; coordInvalid + (positive(coordInvalid)/40 + 1)*40
           loadn R5, #40
           div R4, R3, R5
           inc R4
           mul R4, R4, R5 ; (positive(coordResult)/40 + 1)*40
-          load R2, scriptAlertCurCoordSum ; the other might be compliment 2
+          load R2, scriptAlertCurCoordSum ; without compliment 2
           add R3, R2, R4 ; + coordResult
           
           storei R1, R3
           jmp scriptAlertChoiceGenerateScriptIII
 
         scriptAlertChoiceGenerateScriptIIUpValid:
+          load R3, scriptAlertCurCoordSum
           storei R1, R3
           jmp scriptAlertChoiceGenerateScriptIII
 
@@ -1031,10 +1025,12 @@ scriptAlert:
         jel scriptAlertChoiceGenerateScriptIIDownValid
 
         scriptAlertChoiceGenerateScriptIIDownInvalid:
-          div R4, R3, R5
-          inc R4
-          mul R4, R4, R5 ; (positive(coordResult)/40 + 1)*40
-          add R3, R4, R3 ; + coordResult
+          ; invalid - ((invalid - 1640)/40)*40 = valid
+          loadn R4, #1640
+          sub R4, R3, R4 ; invalid - 1640
+          div R4, R4, R5 ; (invalid - 1640)/40
+          mul R4, R4, R5 ; ((invalid - 1640)/40)*40
+          sub R3, R3, R4 ; invalid - ((invalid - 1640)/40)*40 
 
         scriptAlertChoiceGenerateScriptIIDownValid:
           storei R1, R3
@@ -1059,10 +1055,68 @@ scriptAlert:
 
         dec R7
         storei R1, R7 ; stores 0 to side
+
+        inc R1 ; addr to delaymove 1
+        loadn R5, #10
+        storei R1, R5
+
+        loadn R1, #6
+        add R1, R1, R0 ; addr to mob coord
+        loadi R1, R1 ; mob coord
+        loadn R2, #40
+        add R1, R1, R2 ; right leg
+        inc R1 ; right of right leg coord
+
+        loadn R4, #renderVar
+        loadi R2, R4
+        cmp R1, R2 ; must be eq or gr than min rendervar
+        jle scriptAlertFinish
+
+        inc R4
+        loadi R3, R4
+        cmp R1, R3 ; must be lesser than max rendervar
+        jeg scriptAlertFinish
+
+        loadn R3, #mapTotal
+        add R3, R1, R3 ; addr to pix info
+        loadi R3, R3 ; pix info
+        sub R1, R1, R2 ; coord - min rendervar.. finds coord in render
+
+        outchar R3, R1
+
         jmp scriptAlertFinish
 
         scriptAlertChoiceTurnRight:
           storei R1, R7 ; stores 1 to side
+
+          inc R1 ; addr to delaymove 1
+          loadn R5, #10
+          storei R1, R5
+
+          loadn R1, #6
+          add R1, R1, R0 ; addr to mob coord
+          loadi R1, R1 ; mob coord
+          loadn R2, #40
+          add R1, R1, R2 ; left leg
+          dec R1 ; left of left leg coord
+
+          loadn R4, #renderVar
+          loadi R2, R4
+          cmp R1, R2 ; must be eq or gr than min rendervar
+          jle scriptAlertFinish
+
+          inc R4
+          loadi R3, R4
+          cmp R1, R3 ; must be lesser than max rendervar
+          jeg scriptAlertFinish
+
+          loadn R3, #mapTotal
+          add R3, R1, R3 ; addr to pix info
+          loadi R3, R3 ; pix info
+          sub R1, R1, R2 ; coord - min rendervar.. finds coord in render
+
+          outchar R3, R1
+
           jmp scriptAlertFinish
 
   scriptAlertFinish:
