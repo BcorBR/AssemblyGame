@@ -38,7 +38,7 @@ loadLevel1:
 
   ; player things
   loadn R0, #playerCoordRender
-  loadn R1, #145
+  loadn R1, #25
   storei R0, R1 ; stores coord 750 in player render
 
   inc R0
@@ -68,23 +68,26 @@ loadLevel1:
 
   loadn R1, #6
   add R1, R1, R0 ; addr to mapCoord of mob
-  loadn R2, #653
+  loadn R2, #841
   storei R1, R2 ; coord now 841
 
   inc R1 ; addr to chase bool
   loadn R2, #0
   storei R1, R2 ; restarts chase bool
   inc R1
-  inc R2 ; alert bool 1
   storei R1, R2 ; restarts alert bool
+  loadn R1, #17
+  add R1, R1, R0 ; addr to return bool
+  storei R1, R2 ; restarts return bool
 
-  inc R1   ; addr to side mob is facing
+  loadn R1, #9
+  add R1, R1, R0 ; addr to side mob is facing
   loadn R2, #1
   storei R1, R2 ; stores 1 (facing right)
 
   loadn R1, #12
   add R1, R1, R0 ; addr to script number
-  loadn R2, #1
+  loadn R2, #script1
   storei R1, R2 ; stores script 1
 
   ; slides map from bottom to top
@@ -247,6 +250,22 @@ behaveMob:
       ; if == 0
       storei R2, R3 ; store 1 in chase bool
 
+      ; cancel delaymove
+      loadn R1, #10
+      add R1, R1, R0 ; addr to delayMobMove1
+      loadn R2, #0
+      storei R1, R2 ; stores 10
+
+      ; restores alert timer
+      loadn R1, #13
+      add R1, R1, R0 ; addr to alert timer1
+      loadn R2, #75
+      storei R1, R2
+      
+      inc R1 ; addr to alert timer2
+      loadn R2, #65000
+      storei R1, R2
+
       jmp behaveMobFinish ; finish
 
     conditionChaseFalse:
@@ -255,11 +274,99 @@ behaveMob:
       loadi R4, R2
       cmp R4, R3 ; chase bool == 1?
       jne testAlertBool ; if chaseBool == 0 test alertBool
+      
+      ; -1 to script alert
+      loadn R2, #16
+      add R2, R2, R0 
+      loadi R2, R2 ; addr of script alert
+      loadn R4, #65535
+      storei R2, R4
+
+      ; -1 to returnscript
+      loadn R2, #18
+      add R2, R2, R0
+      loadi R2, R2 ; addr to return script
+      storei R2, R4
+
+      loadn R2, #7
+      add R2, R2, R0 ; addr to chase bool
 
       loadn R4, #0
       storei R2, R4 ;
       inc R2 ; addr to alert bool
       storei R2, R3 ; stores 0 to chaseBool and 1 to alertBool
+
+      ; updates alert script so mob will run to last coord player was seen
+      loadn R1, #6
+      add R1, R1, R0 ; addr to  mobcoord
+      loadi R2, R1 ; mob coord
+      loadn R6, #40
+
+      div R3, R2, R6 ; mob.y
+      mod R2, R2, R6 ; mob.x
+
+      load R4, playerCoordInMap
+      div R5, R4, R6 ; player.y
+      mod R4, R4, R6 ; player.x
+
+      loadn R1, #16
+      add R1, R1, R0 ; addr to addr of scriptalert
+      loadi R1, R1 ; addr of script alert
+      loadn R7, #0
+      storei R1, R7 ; stores phase number 0
+      inc R1 ; next addr
+
+      cmp R3, R5 ; if mob.y <=> player.y
+      jle behaveMobConditionChaseFalseMobYLesser
+      jgr behaveMobConditionChaseFalseMobYGreater
+      jeq behaveMobConditionChaseFalseMobXTest
+
+      behaveMobConditionChaseFalseMobYLesser:
+        mul R5, R5, R6 ; player.y * 40
+        add R5, R5, R2 ; player.y * 40 + mob.x
+        storei R1, R5 ; 1st phase
+        inc R1
+        loadn R7, #'d'
+        storei R1, R7 ; stores side to go
+        
+        inc R1
+        jmp behaveMobConditionChaseFalseMobXTest
+
+      behaveMobConditionChaseFalseMobYGreater:
+        mul R5, R5, R6 ; player.y * 40
+        add R5, R5, R2 ; player.y * 40 + mob.x
+        storei R1, R5 ; 1st phase
+        inc R1
+        loadn R7, #'u'
+        storei R1, R7 ; stores side to go
+
+        inc R1
+        jmp behaveMobConditionChaseFalseMobXTest
+      
+      behaveMobConditionChaseFalseMobXTest:
+        ; we are already at y coord, just add player.x - mob.x
+        add R3, R5, R4 ; past coord added + player.x
+        sub R3, R3, R2 ; - mob.x
+        storei R1, R3
+        inc R1
+
+        cmp R2, R4 ; mob.x <=> player.x
+        jgr behaveMobConditionChaseFalseMobXGreater
+
+        loadn R3, #'r'
+        storei R1, R3 ; store side to move
+        inc R1 
+        loadn R3, #1
+        storei R1, R3 ; store right face        
+
+        jmp behaveMobFinish
+
+        behaveMobConditionChaseFalseMobXGreater:
+          loadn R3, #'l'
+          storei R1, R3 ; store side to move
+          inc R1 
+          loadn R3, #0
+          storei R1, R3 ; store right face 
 
       jmp behaveMobFinish
     
@@ -269,9 +376,19 @@ behaveMob:
       loadi R2, R2
       loadn R3, #1
       cmp R2, R3
-      jne behaveMobFinish ; if alertBool == 0, finish
+      jne testReturnBool ; if alertBool == 0, test return bool
 
       call delayMobAlert
+      jmp behaveMobFinish
+    
+    ; ARRUMAAAAAAAAAAAAAAAAAAAAAAAAAAR
+    testReturnBool:
+      loadn R1, #17
+      add R1, R1, R0 ; addr to return bool
+      loadi R2, R1
+      loadn R3, #1
+      cmp R2, R3
+      jne behaveMobFinish ; if == 0, finish
 
   behaveMobFinish:
     pop R7
@@ -282,6 +399,152 @@ behaveMob:
     pop R2
     pop R1
     rts
+
+
+returnBoolAction:
+  push R1
+  push R2
+  push R3
+  push R4
+  push R5
+  push R6
+  push R7
+
+  ; check if scriptReturn[0] == -1
+  loadn R5, #18 
+  add R5, R5, R0 ; addr to addr to script return
+  loadi R5, R5 ; addr to script return
+  
+  loadi R4, R5 ; script[0]
+  loadn R3, #65535
+  cmp R3, R4
+  jne returnBoolActionScriptActive
+
+  ; here, script[0] == -1
+  loadn R7, #12
+  add R7, R7, R0 ; addr to addr to std script
+  loadi R6, R7 ; addr to std script
+  
+  ; scriptreturn[0] = 0
+  loadn R7, #0
+  storei R5, R7
+
+  inc R6 ; addr to first coord
+  loadi R6, R6 ; first coord
+  loadn R7, #40
+  mod R1, R6, R7 ; final.x
+  div R2, R6, R7 ; final.y
+
+  loadn R4, #6
+  add R4, R4, R0 ; addr to mob coord
+  loadi R4, R4 ; mob.coord
+  mod R3, R4, R7 ; mob.x
+  div R4, R4, R7 ; mob.y
+
+  ; check if mob.x > final.x
+  cmp R3, R1
+  jeg returnBoolActionXEG ; if x eq or gr
+  
+  ; if x lesser
+  inc R5
+  inc R5 ; addr to side to move
+  loadn R7, #'r'
+  storei R5, R7 ; stores left side walk
+  
+  dec R5 ; addr to store first coord to be reached
+  jmp returnBoolActionStoreX
+
+  returnBoolActionXEG:
+    inc R5
+    inc R5 ; addr to side to move
+    loadn R7, #'l'
+    storei R5, R7 ; stores right side walk
+
+    dec R5 ; addr to store first coord to be reached
+
+returnBoolActionStoreX:
+  loadn R7, #40
+  mul R3, R4, R7 ; mob.y *40
+  add R3, R3, R1 ; mob.y*40 + final.x
+  storei R5, R3
+
+  inc R5
+  inc R5 ; addr for new coord
+
+  ; check if mob.y > final.y
+  cmp R4, R2
+  jeg returnBoolActionYEG ; if y eq or gr
+
+  ; if y lesser
+  loadn R7, #'d'
+  inc R5 ; addr to sside to move
+  storei R5, R7 ; stores down side walk
+  
+  dec R5 ; addr for next coord
+  jmp returnBoolActionStoreY
+
+  returnBoolActionYEG:
+    loadn R7, #'u'
+    inc R5 ; addr to sside to move
+    storei R5, R7 ; stores up side walk
+  
+    dec R5 ; addr for next coord
+  
+  returnBoolActionStoreY:
+    loadn R7, #40
+    mul R2, R2, R7 ; final.y *40
+    add R2, R2, R1 ; final.y *40 + final.x
+
+    storei R5, R2
+
+  ;call debugScriptAlert
+  jmp returnBoolActionFinish
+
+  ; R5 = addr to phaseNum
+  ; R4 = script[0]
+  returnBoolActionScriptActive:
+    loadn R7, #2
+    mul R4, R4, R7 ; mults phaseNum by 2
+    add R4, R4, R5 ; addr to current coord - 1
+    inc R4 ; addr to cur coord
+
+    loadi R3, R4 ; cur coord to be reached
+    loadn R7, #0 
+    cmp R3, R7 ; if eq to 0, we finished, else, execute script
+    jeq returnBoolActionScriptEnd
+
+    ; if here, we did not reach end of script, let's execute it
+    ; R3 must be addr of script
+    loadn R7, #6
+    add R2, R7, R0 ; R2 must be addr of mob coord
+    loadn R7, #18
+    add R3, R7, R0 ; R3 must be addr of script
+    loadi R3, R3 ; actual address
+    call scriptAction
+
+    jmp returnBoolActionFinish
+
+    returnBoolActionScriptEnd:
+      ; stores -1 to phasenum
+      loadn R7, #65535
+      storei R5, R7
+
+      ; stores 0 to return bool
+      loadn R7, #17
+      add R6, R7, R0 ; addr to return bool
+      loadn R7, #0
+      storei R6, R7
+
+returnBoolActionFinish:
+  pop R7
+  pop R6
+  pop R5
+  pop R4
+  pop R3
+  pop R2
+  pop R1
+  rts
+
 
 ; will use R0 as addr of mob
 mobMovement:
@@ -306,11 +569,24 @@ mobMovement:
     inc R3 ; addr of alert bool
     loadi R2, R3
     cmp R2, R1 ; if alert bool = 1, script alert
-               ;else, scriptMain
-    jne mobMovementScriptMain
+               ;else, test return bool
+    jne mobMovementReturnBool
 
     ; ALERT SCRIPT HERE
     call scriptAlert
+    call renderMob
+    jmp mobMovementFinish
+
+  mobMovementReturnBool:
+    loadn R3, #17
+    add R3, R3, R0 ; addr to return bool
+    loadi R2, R3
+    cmp R2, R1 ; if returnBool == 1, script return
+               ; else, scriptmain
+    jne mobMovementScriptMain
+
+    ; return sctipt here
+    call returnBoolAction
     call renderMob
     jmp mobMovementFinish
 
@@ -333,6 +609,7 @@ debugScriptAlert:
   push R6
   push R7
 
+  ; script alert
   loadn R1, #6
   add R1, R1, R0
   loadi R1, R1 ; coord
@@ -350,7 +627,44 @@ debugScriptAlert:
   loadi R6, R7 ; fifth var
   inc R7
   loadi R7, R7 ; sixth var
-  ; breakp
+
+  ; std script
+  loadn R7, #script1
+  loadi R2, R7 ; first var 
+  inc R7
+  loadi R3, R7 ; second var
+  inc R7
+  loadi R4, R7 ; third var
+  inc R7
+  loadi R5, R7 ; fourth var
+  inc R7
+  loadi R6, R7 ; fifth var
+  inc R7
+  loadi R7, R7 ; sixth var
+   ;breakp
+
+  ; return script
+  loadn R7, #18
+  add R7, R7, R0
+  loadi R7, R7
+
+  loadi R2, R7 ; first var 
+  inc R7
+  loadi R3, R7 ; second var
+  inc R7
+  loadi R4, R7 ; third var
+  inc R7
+  loadi R5, R7 ; fourth var
+  inc R7
+  loadi R6, R7 ; fifth var
+  inc R7
+  loadi R7, R7 ; sixth var
+  
+  loadn R1, #17
+  add R1, R1, R0 
+  loadi R1, R1 ; return bool
+
+  ;breakp
 
   pop R7
   pop R6
@@ -396,19 +710,6 @@ scriptAlert:
              ; else, test if == 1
   jne scriptAlertTestSideRightEnd
   
-  ; check delayMob
-  ;loadn R1, #10
-  ;add R1, R1, R0 ; addr to delay 1
-  ;loadi R2, R1 ; delaymob1
-  ;loadn R3, #0
-  ;cmp R2, R3
-  ;jne scriptAlertFinish ; if not 0, finish
-
-  ;inc R2 ; addr to delaymob2
-  ;loadi R2, R1 ; delaymob2
-  ;cmp R2, R3 ; if not 0, finish
-  ;jne scriptAlertFinish
-  
   loadn R1, #9
   add R1, R0, R1 ; addr to mob is side looking
   storei R1, R5 ; stores 0, facing left
@@ -420,19 +721,6 @@ scriptAlert:
   jmp scriptAlertResetScript
 
   scriptAlertTestSideRightEnd:
-    ; check delayMob
-    ;loadn R1, #10
-    ;add R1, R1, R0 ; addr to delay 1
-    ;loadi R2, R1 ; delaymob1
-    ;loadn R3, #0
-    ;cmp R2, R3
-    ;jne scriptAlertFinish ; if not 0, finish
-
-    ;inc R2 ; addr to delaymob2
-    ;loadi R2, R1 ; delaymob2
-    ;cmp R2, R3 ; if not 0, finish
-    ;jne scriptAlertFinish
-
     loadn R5, #1
     cmp R4, R5 ; test if == 1, script[0] == -1 and mob.side = 1
                ; else, finish
@@ -450,7 +738,6 @@ scriptAlert:
     ; scriptAlert[0] = -1
     loadn R5, #65535
     storei R3, R5
-
     
     jmp scriptAlertFinish  
 
@@ -1266,30 +1553,10 @@ scriptMain:
   ; reads script number of mob
   loadn R1, #12
   add R1, R1, R0
-  loadi R1, R1
+  loadi R3, R1
 
-  loadn R3, #0
-  cmp R1, R3
-  jne scriptMainTest1
-  ; 0 does nothing
-  call renderMob
-  jmp scriptMainFinish
-
-  ;scriptMainTest
-  scriptMainTest1:
-    loadn R3, #1
-    cmp R1, R3
-    jne scriptMainTest2
-
-    loadn R3, #script1 ; R3 will hold addr of script!!! 
-    call scriptAction
-    jmp scriptMainFinish
-
-  scriptMainTest2:
-    ; to be updated
-
-
-   
+  loadn R3, #script1 ; R3 will hold addr of script!!! 
+  call scriptAction ; will use R2 as addr of mobCoord
 
   scriptMainFinish:
     pop R3
@@ -1315,6 +1582,7 @@ scriptAction:
   add R6, R3, R4 ; R6 = addr script[1+2*phaseNum]
   loadi R4, R6 ; R4 = script[1+2*phaseNum]
 
+  ; check if we finished
   loadn R5, #0
   cmp R4, R5 ; if == 0, phaseNum = 0
   jeq scriptActionLastPhase
@@ -2115,7 +2383,7 @@ delayMobAlert:
     jne delayMobAlertTimer1Dec
 
     ; if equal to 0
-    loadn R4, #150
+    loadn R4, #75
     storei R2, R4 ; stores 50 to timer1
     inc R2
     loadn R4, #65000
@@ -2123,6 +2391,14 @@ delayMobAlert:
     loadn R4, #6
     sub R2, R2, R4 ; addr of alertBool
     storei R2, R3 ; stores 0 to alertBool
+
+    ; resets delayMobMov
+    loadn R1, #10
+    add R1, R1, R0 ; addr to delayMobMove1
+    loadn R2, #0
+    storei R1, R2 ; resets it
+    inc R1 ; addr to delayMobMove2
+    storei R1, R2 ; resets it
 
     ; unrenders inter
     loadn R1, #6
@@ -2139,6 +2415,12 @@ delayMobAlert:
     load R3, renderVar
     sub R1, R1, R3 ; coord in Render
     outchar R2, R1
+
+    ; activates return bool
+    loadn R1, #17
+    add R1, R1, R0 ; addr to return bool
+    loadn R2, #1
+    storei R1, R2 ; activates
 
     jmp delayMobAlertFinish
 
@@ -3774,7 +4056,7 @@ scriptAlertCurCoordSum: var #1
   static scriptAlertCurCoordSum + #0, #0 
 
 
-mob1: var #17
+mob1: var #19
   static mob1 + #0, #0 ; if it's active or not
   static mob1 + #1, #2822 ; left face skin
   static mob1 + #2, #2823 ; right face skin
@@ -3787,12 +4069,21 @@ mob1: var #17
   static mob1 + #9, #1 ; side that mob is looking at, 0 for left, 1 for right
   static mob1 + #10, #1 ; delay mobMove1 
   static mob1 + #11, #65000 ; delay mobMove2
-  static mob1 + #12, #0 ; number of script
-  static mob1 + #13, #2000 ; alertTimer 1, changed from 150
-  static mob1 + #14, #65000 ; alertTimer 2
+  static mob1 + #12, #0 ; pointer to script
+  static mob1 + #13, #75 ; alertTimer 1, changed from 75
+  static mob1 + #14, #65000 ; alertTimer 2 from max
   static mob1 + #15, #0 ; last movememt, vertical or horizontal
   static mob1 + #16, #scriptAlertMob1 ; pointer
+  static mob1 + #17, #0 ; return bool
+  static mob1 + #18, #scriptReturnMob1 ; pointer
 
+scriptReturnMob1: var #6
+  static scriptReturnMob1 + #0, #65535 ; phase number
+  static scriptReturnMob1 + #1, #0 ; coord to go
+  static scriptReturnMob1 + #2, #0 ; side to go
+  static scriptReturnMob1 + #3, #0 ; coord to go
+  static scriptReturnMob1 + #4, #0 ; side to go 
+  static scriptReturnMob1 + #5, #0 ; finish
 
 scriptAlertMob1: var #6
   static scriptAlertMob1 + #0, #65535 ; phase number
@@ -3803,13 +4094,15 @@ scriptAlertMob1: var #6
   static scriptAlertMob1 + #5, #0 ; side to look at
 
 ; starts at 841
-script1: var #6
+script1: var #8
   static script1 + #0, #0 ; phase number
-  static script1 + #1, #877
-  static script1 + #2, #'r' ; right
-  static script1 + #3, #841
-  static script1 + #4, #'l' ; left
-  static script1 + #5, #0
+  static script1 + #1, #841
+  static script1 + #2, #'l'
+  static script1 + #3, #877
+  static script1 + #4, #'r' ; right
+  static script1 + #5, #841
+  static script1 + #6, #'l' ; left
+  static script1 + #7, #0
 
 
 curLevel: var #1
