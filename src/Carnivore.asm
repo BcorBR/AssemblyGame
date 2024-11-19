@@ -38,7 +38,7 @@ loadLevel1:
 
   ; player things
   loadn R0, #playerCoordRender
-  loadn R1, #25
+  loadn R1, #198
   storei R0, R1 ; stores coord 750 in player render
 
   inc R0
@@ -68,7 +68,7 @@ loadLevel1:
 
   loadn R1, #6
   add R1, R1, R0 ; addr to mapCoord of mob
-  loadn R2, #841
+  loadn R2, #3
   storei R1, R2 ; coord now 841
 
   inc R1 ; addr to chase bool
@@ -497,7 +497,6 @@ returnBoolActionStoreX:
 
     storei R5, R2
 
-  ;call debugScriptAlert
   jmp returnBoolActionFinish
 
   ; R5 = addr to phaseNum
@@ -718,6 +717,31 @@ scriptAlert:
   loadn R5, #10
   storei R1, R5
 
+  ; unrender pixel
+  loadn R1, #6
+  add R1, R1, R0 ; addr to mob coord
+  loadi R1, R1 ; mob coord
+  loadn R2, #40
+  add R1, R1, R2 ; left leg
+  inc R1 ; right of right leg coord
+
+  loadn R4, #renderVar
+  loadi R2, R4
+  cmp R1, R2 ; must be eq or gr than min rendervar
+  jle scriptAlertResetScript
+
+  inc R4
+  loadi R3, R4
+  cmp R1, R3 ; must be lesser than max rendervar
+  jeg scriptAlertResetScript
+
+  loadn R3, #mapTotal
+  add R3, R1, R3 ; addr to pix info
+  loadi R3, R3 ; pix info
+  sub R1, R1, R2 ; coord - min rendervar.. finds coord in render
+
+  outchar R3, R1
+
   jmp scriptAlertResetScript
 
   scriptAlertTestSideRightEnd:
@@ -734,8 +758,37 @@ scriptAlert:
     loadn R5, #10
     storei R1, R5
 
+    ; unrender pixel
+    loadn R1, #6
+    add R1, R1, R0 ; addr to mob coord
+    loadi R1, R1 ; mob coord
+    loadn R2, #40
+    add R1, R1, R2 ; left leg
+    dec R1 ; left of left leg coord
+
+    loadn R4, #renderVar
+    loadi R2, R4
+    cmp R1, R2 ; must be eq or gr than min rendervar
+    jle scriptAlertResetScript
+
+    inc R4
+    loadi R3, R4
+    cmp R1, R3 ; must be lesser than max rendervar
+    jeg scriptAlertResetScript
+
+    loadn R3, #mapTotal
+    add R3, R1, R3 ; addr to pix info
+    loadi R3, R3 ; pix info
+    sub R1, R1, R2 ; coord - min rendervar.. finds coord in render
+
+    outchar R3, R1
+
   scriptAlertResetScript:
     ; scriptAlert[0] = -1
+    loadn R3, #16
+    add R3, R3, R0 ; addr to addr to script alert
+    loadi R3, R3 ; addr to script alert
+
     loadn R5, #65535
     storei R3, R5
     
@@ -1786,6 +1839,7 @@ renderMob:
     pop FR
     rts
 
+
 ; will use R3 as script addr and
 ; R0 as mob addr
 ; R6 = addr script[1+2*phaseNum]
@@ -1800,7 +1854,6 @@ mobMoveChoice:
   cmp R2, R1 ; if == 0, finish
              ; else, continue
   jeq mobMoveChoiceFinish
-  call debugScriptAlert
   
   inc R6 ; addr to side to move
   loadi R1, R6
@@ -1852,8 +1905,8 @@ mobMoveUp:
   storei R2, R3
 
   ; test side to restore background
-  loadn R4, #3
-  add R1, R2, R4 ; addr to side
+  loadn R4, #9
+  add R1, R0, R4 ; addr to side
   loadi R1, R1
 
   loadn R4, #0
@@ -1874,13 +1927,15 @@ mobMoveUp:
   jeg mobMoveUpRestoreLeftTestLower
 
   ; restores upper part side left
-  dec R1
-  loadi R4, R1 ; min rendervar
+  dec R1 ; addr to min rendervar
 
-  inc R3 ; past coords of wings
+  inc R3 
+  loadn R4, #40
+  add R3, R3, R4 ; past coords of wings
   loadn R5, #mapTotal
   add R5, R3, R5 ; addr to pix info
   loadi R6, R5 ; pix info
+  loadi R4, R1 ; min rendervar
   sub R7, R3, R4 ; mapcoord - minRenderVar
   outchar R6, R7
 
@@ -2022,12 +2077,12 @@ mobMoveDown:
   storei R2, R3
 
   ; restore background
-  loadn R5, #renderVar
-  loadi R4, R5 ; map coord must equal or  greater than min var render
-  
   loadn R4, #40
   sub R3, R3, R4 ; past mob coord
   
+  loadn R5, #renderVar
+  loadi R4, R5 ; map coord must equal or  greater than min var render
+
   cmp R3, R4 ; if equal or greater, test maxCoord
               ; else, finish
   jle mobMoveDownFinish
@@ -2532,7 +2587,7 @@ renderSymbolBackground:
     cmp R4, R5
     jel renderSymbolBackgroundFinish
 
-    ; mob map coord must be eq or lower to maxRenderVar + 79
+    ; mob map coord must be eq or lower than maxRenderVar + 79
     loadi R2, R1 ; mob map coord
     inc R3 ; addr to max rendervar
     loadi R4, R3 ; max rendervar
@@ -2661,7 +2716,7 @@ renderSymbolBackground:
       load R4, renderVar
       sub R4, R5, R4 ; symbol coord in map - min render pixel = symbol coord in render
                       ; R4 = symbol coord in render
-      outchar R3, R5
+      outchar R3, R4
     
   renderSymbolBackgroundFinish:
     pop R6
@@ -4097,7 +4152,7 @@ scriptAlertMob1: var #6
 script1: var #8
   static script1 + #0, #0 ; phase number
   static script1 + #1, #841
-  static script1 + #2, #'l'
+  static script1 + #2, #'d'
   static script1 + #3, #877
   static script1 + #4, #'r' ; right
   static script1 + #5, #841
