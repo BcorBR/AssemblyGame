@@ -1,13 +1,30 @@
-call levelMain
+call printMenu
 
-call render
-call renderPlayer
-jmp inGame
+menuInGame:
+  
+  inchar R0
+  loadn R1, #32 ; space 
+  cmp R0, R1
+  jeq startLevel  
 
+  jmp menuInGame ; will loop until player hits space
+
+startLevel:
+  call levelMain ; loads current level
+
+  call render
+  call renderPlayer
 
 inGame:
   call DelayMove
   call mobMain
+  
+  ; renders baby bee
+  call renderBaby
+
+  ; has the level finished?
+  call finishLevel
+
   jmp inGame
 
 ; selects level to be loaded
@@ -24,6 +41,12 @@ levelMain:
   jmp levelMainFinish
 
   testLevel2:
+    loadn R1, #2
+    cmp R0, R1
+    jne testLevel3
+    call loadLevel2
+
+  testLevel3:
 
   levelMainFinish:
     pop R1
@@ -38,7 +61,107 @@ loadLevel1:
 
   ; player things
   loadn R0, #playerCoordRender
-  loadn R1, #198
+  loadn R1, #43
+  storei R0, R1 ; stores coord 43 in player render
+
+  inc R0
+  storei R0, R1 ; stores coord 43 in player map
+
+  ; render things
+  loadn R0, #renderVar
+  loadn R1, #0   ;#480
+  storei R0, R1 ; stores render min cord as 480
+
+  inc R0
+  loadn R1, #1200   ;#1680
+  storei R0, R1 ; stores max coord as 1680
+
+  ; restars slideCounter
+  loadn R0, #slideCounter
+  loadn R1, #20000
+  storei R0, R1
+  inc R0
+  loadn R1, #65000
+  storei R0, R1
+
+  ; baby bee spawn
+  loadn R1, #0
+  store babyBee, R1
+
+  ; mob things
+  loadn R0, #mob1
+  call loadMobRoutine
+
+  loadn R1, #6
+  add R1, R1, R0 ; addr to mapCoord of mob
+  loadn R2, #841
+  storei R1, R2 ; coord now 841
+
+  loadn R1, #9
+  add R1, R1, R0 ; addr to side mob is facing
+  loadn R2, #1
+  storei R1, R2 ; stores 1 (facing right)
+
+  loadn R1, #12
+  add R1, R1, R0 ; addr to script number
+  loadn R2, #script1
+  storei R1, R2 ; stores script 1
+
+  ; second mob
+  loadn R0, #mob2
+  call loadMobRoutine
+
+  loadn R1, #6
+  add R1, R1, R0 ; addr to mapCoord of mob
+  loadn R2, #1152
+  storei R1, R2 ; coord now 1152
+
+  loadn R1, #9
+  add R1, R1, R0 ; addr to side mob is facing
+  loadn R2, #1
+  storei R1, R2 ; stores 1 (facing right)
+
+  loadn R1, #12
+  add R1, R1, R0 ; addr to script number
+  loadn R2, #script2
+  storei R1, R2 ; stores script 2
+
+  ; third mob
+  loadn R0, #mob3
+  call loadMobRoutine
+
+  loadn R1, #6
+  add R1, R1, R0 ; addr to mapCoord of mob
+  loadn R2, #1143
+  storei R1, R2 ; coord now 1143
+
+  loadn R1, #9
+  add R1, R1, R0 ; addr to side mob is facing
+  loadn R2, #1
+  storei R1, R2 ; stores 1 (facing right)
+
+  loadn R1, #12
+  add R1, R1, R0 ; addr to script number
+  loadn R2, #script3
+  storei R1, R2 ; stores script 3
+
+  ; slides map from bottom to top
+  ;call levelSlide
+
+  pop R2
+  pop R1
+  pop R0
+  rts
+
+
+loadLevel2:
+  push R0
+  push R1
+  push R2
+
+  ; player things
+  loadn R0, #playerCoordRender
+  loadn R1, #950
   storei R0, R1 ; stores coord 750 in player render
 
   inc R0
@@ -68,7 +191,7 @@ loadLevel1:
 
   loadn R1, #6
   add R1, R1, R0 ; addr to mapCoord of mob
-  loadn R2, #3
+  loadn R2, #841
   storei R1, R2 ; coord now 841
 
   inc R1 ; addr to chase bool
@@ -93,11 +216,156 @@ loadLevel1:
   ; slides map from bottom to top
   ;call levelSlide
 
-; ADDD POP PUSH
   pop R2
   pop R1
   pop R0
   rts
+
+; R0 must have mob addr
+loadMobRoutine:
+  push R1
+  push R2
+
+  loadn R1, #1
+  storei R0, R1 ; activates mob
+
+  loadn R1, #7 ; addr to chase bool
+  loadn R2, #0
+  storei R1, R2 ; restarts chase bool
+  inc R1
+  storei R1, R2 ; restarts alert bool
+  loadn R1, #17
+  add R1, R1, R0 ; addr to return bool
+  storei R1, R2 ; restarts return bool
+
+  pop R2
+  pop R1
+  rts
+
+
+printMenu:
+  push R0
+  push R1
+  push R2
+  push R3
+
+  loadn R0, #menu
+  loadn R1, #0
+  loadn R2, #1200
+
+  printmenuScreenLoop:
+
+    add R3,R0,R1
+    loadi R3, R3
+    outchar R3, R1
+    inc R1
+    cmp R1, R2
+
+    jne printmenuScreenLoop
+
+  pop R3
+  pop R2
+  pop R1
+  pop R0
+  rts
+
+finishLevel:
+  push R0
+  push R1
+  push R2
+
+  ; check if babyBee has been eaten
+  load R0, babyBee
+  loadn R1, #1
+  cmp R0, R1 ; if equal, check coords
+             ; else, finish
+  jne finishLevelFinish
+
+  ; check if player has returned home
+  load R0, playerCoordInMap
+  loadn R2, #40
+
+  div R1, R0, R2 ; player.y
+  mod R0, R0, R2 ; player.x
+
+  ; player.x <= 7 AND 
+  ; player.y <= 6
+  loadn R2, #7
+  cmp R0, R2 ; eq or le
+  jgr finishLevelFinish
+
+  loadn R2, #6
+  cmp R1, R2 ; eq or le
+  jgr finishLevelFinish
+
+  ; increments level
+  load R1, curLevel
+  inc R1
+  store curLevel, R1 ; increases level
+
+  ; prints next level screen
+  call printnextlevelScreen
+
+  ; will loop until player presses space
+  ; then jmps to startLevel and loads new level
+  finishLevelSpaceLoop:
+    inchar R0
+    loadn R1, #32 ; space
+    cmp R0, R1
+    jeq startLevel  
+
+    jmp finishLevelSpaceLoop
+
+finishLevelFinish:
+  pop R2
+  pop R1
+  pop R0
+  rts
+
+
+renderBaby:
+  push R0
+  push R1
+  push R2
+  push R3
+
+  loadn R0, #1
+  load R1, babyBee
+  cmp R0, R1 ; has baby bee been eaten
+             ; if 1, yes it has, finish
+             ; else, continue
+  jeq renderBabyFinish
+
+  ; checks if in distance
+  loadn R0, #1396
+  loadn R3, #renderVar
+  loadi R1, R3 ; min render var
+
+  cmp R0, R1 ; has to be eq or greater
+             ; else, finish
+  jle renderBabyFinish
+
+  inc R3
+  loadi R2, R3 ; max render var
+  cmp R0, R2 ; has to be lesser
+             ; else, finish
+  jeg renderBabyFinish
+
+  sub R0, R0, R1 ; finds render coord
+  loadn R1, #2850 ; baby head value
+  outchar R1, R0 ; renders babyhead
+
+  dec R0
+  loadn R1, #1827 ; baby diaper skin
+  outchar R1, R0 ; renders baby diaper
+
+  renderBabyFinish:
+    pop R3
+    pop R2
+    pop R1
+    pop R0
+    rts
+
 
 
 ; will slide map from bottom to top
@@ -177,20 +445,27 @@ levelSlide:
     pop R0
     rts
 
-; loads configs for testing
-testLevel:
+printnextlevelScreen:
   push R0
   push R1
   push R2
-  
-  loadn R0, #mob1
-  loadn R1, #1
-  storei R0, R1
-  loadn R1, #6
-  add R0, R0, R1
-  loadn R2, #746
-  storei R0, R2
+  push R3
 
+  loadn R0, #nextlevel
+  loadn R1, #0
+  loadn R2, #1200
+
+  printnextlevelScreenLoop:
+
+    add R3,R0,R1
+    loadi R3, R3
+    outchar R3, R1
+    inc R1
+    cmp R1, R2
+
+    jne printnextlevelScreenLoop
+
+  pop R3
   pop R2
   pop R1
   pop R0
@@ -215,6 +490,28 @@ mobMain:
     call renderExclaInter
 
   checkActiveMob2:
+    load R1, mob2
+    cmp R1, R2 ; checks if mob is active
+    jne checkActiveMob3
+
+    loadn R0, #mob2 ; will be used for various instructions, 
+                    ; should not be changed inside of them
+    call mobMovement
+    call behaveMob
+    call renderExclaInter
+
+  checkActiveMob3:
+    load R1, mob3
+    cmp R1, R2 ; checks if mob is active
+    jne mobMainFinish
+
+    loadn R0, #mob3 ; will be used for various instructions, 
+                    ; should not be changed inside of them
+    call mobMovement
+    call behaveMob
+    call renderExclaInter
+
+  mobMainFinish:
     pop R2
     pop R1
     pop R0
@@ -259,7 +556,7 @@ behaveMob:
       ; restores alert timer
       loadn R1, #13
       add R1, R1, R0 ; addr to alert timer1
-      loadn R2, #75
+      loadn R2, #15
       storei R1, R2
       
       inc R1 ; addr to alert timer2
@@ -381,7 +678,6 @@ behaveMob:
       call delayMobAlert
       jmp behaveMobFinish
     
-    ; ARRUMAAAAAAAAAAAAAAAAAAAAAAAAAAR
     testReturnBool:
       loadn R1, #17
       add R1, R1, R0 ; addr to return bool
@@ -1606,9 +1902,8 @@ scriptMain:
   ; reads script number of mob
   loadn R1, #12
   add R1, R1, R0
-  loadi R3, R1
+  loadi R3, R1 ; R3 will hold addr of script!!! 
 
-  loadn R3, #script1 ; R3 will hold addr of script!!! 
   call scriptAction ; will use R2 as addr of mobCoord
 
   scriptMainFinish:
@@ -1914,6 +2209,9 @@ mobMoveUp:
   jne mobMoveUpRestoreRight
 
   ; test render coords
+  loadn R4, #40
+  add R3, R3, R4 ; one down y axis, test wings line
+
   loadn R1, #renderVar
   loadi R4, R1 ; min renderVar
   cmp R3, R4 ; must be equal or greater
@@ -1929,9 +2227,7 @@ mobMoveUp:
   ; restores upper part side left
   dec R1 ; addr to min rendervar
 
-  inc R3 
-  loadn R4, #40
-  add R3, R3, R4 ; past coords of wings
+  inc R3 ; past wings coord
   loadn R5, #mapTotal
   add R5, R3, R5 ; addr to pix info
   loadi R6, R5 ; pix info
@@ -2359,6 +2655,7 @@ mobMoveRight:
     pop R1
     rts
 
+
 ; will use R0 as mob addr
 delayMoveMob:
   push R1
@@ -2380,7 +2677,7 @@ delayMoveMob:
   loadn R4, #1 
   storei R1, R4 ; stores 1 in timer 1
   inc R1 ; addr to timer 2
-  loadn R4, #65000
+  loadn R4, #5000
   storei R1, R4 ; stores 65000  in timer 2
   loadn R2, #1 ; bool = true
 
@@ -2391,7 +2688,7 @@ delayMoveMob:
     storei R1, R2 ; decrements and stores timer 1
 
     inc R1 ; addr to timer 2
-    loadn R2, #65000
+    loadn R2, #5000
     storei R1, R2 ; restores timer 2
     loadn R2, #0 ; bool = false
 
@@ -2522,9 +2819,18 @@ renderExclaInter:
   cmp R2, R3
   jel renderExclaInterFinish
 
+  ; check if symbol coord below max render coord
+  loadn R3, #renderVar
+  inc R3
+  loadi R3, R3 ; max rendervar
+  
+  loadn R4, #80 
+  sub R2, R2, R4 ; R2 is coord in render, now 2 up in y axis
+  cmp R2, R3 ; has to be lesser than R3
+             ; else, finish
+  jeg renderExclaInterFinish
+
   ; actual rendering
-  inc R3 ; subs 2 in y axis (80)
-  sub R2, R2, R3 ; coord of excla/inter
   loadn R3, #3134 ; exclamation
   outchar R3, R2
   jmp renderExclaInterFinish
@@ -2539,19 +2845,26 @@ renderExclaInter:
     dec R1
     dec R1 ; addr to coordInMap
     loadi R1, R1
-    ; checks if mob not above 3rd line (1-indexed) of render so excla/inter can be rendered
+    loadn R2, #80
+    sub R1, R1, R2 ; coord to symbol
+    
+    ; check if symbol below min rendervar
     load R2, renderVar ; min var of render
-    sub R2, R1, R2 ; coord of mob in render
-    loadn R3, #79 ; last coord in 2nd line (1-indexed)
-                  ; mob coord has to be greater than this
-    cmp R2, R3
-    jel renderExclaInterFinish
+    cmp R1, R2 ; has to be eq or gr
+    jle renderExclaInterFinish
+
+    loadn R2, #renderVar
+    inc R2
+    loadi R2, R2
+    cmp R1, R2 ; has to be le
+    jeg renderExclaInterFinish
 
     ; actual rendering
-    inc R3 ; subs 2 in y axis (80)
-    sub R2, R2, R3 ; coord of excla/inter in render
+    load R2, renderVar
+    sub R1, R1, R2 ; coord - min rendervar
+
     loadn R3, #3135 ; interogation
-    outchar R3, R2
+    outchar R3, R1
 
     jmp renderExclaInterFinish
     
@@ -3436,7 +3749,7 @@ DelayMove:
     dec R0
     store delayPlayerMove1, R0
     
-    loadn R0, #30000
+    loadn R0, #5000
     store delayPlayerMove2, R0
     
     jmp finishDelayMove
@@ -3457,7 +3770,7 @@ restoreDelay:
 
   ; must be stored only if playerMove succeded
   loadn R1, #1
-  loadn R0, #30000
+  loadn R0, #5000
   store delayPlayerMove2,  R0
   store delayPlayerMove1, R1
 
@@ -3491,6 +3804,10 @@ playerMove:
   loadn R1, #'d'
   cmp R0, R1
   jeq playerMoveRight
+  
+  loadn R1, #32 ; space
+  cmp R0, R1
+  jeq playerMoveSpace
 
   jmp playerMoveFinish
 
@@ -3766,7 +4083,41 @@ playerMove:
       call restoreDelay
       jmp playerMoveFinish
 
+  playerMoveSpace:
+   ; check if player in right coord
+    load R0, playerCoordInMap
+    loadn R1, #1275
+    cmp R0, R1 
+    jeq playerMoveSpaceEatBaby
 
+    loadn R1, #1274
+    cmp R0, R1 
+    jeq playerMoveSpaceEatBaby
+
+    loadn R1, #1273
+    cmp R0, R1 
+    jeq playerMoveSpaceEatBaby
+
+    loadn R1, #1312
+    cmp R0, R1 
+    jeq playerMoveSpaceEatBaby
+
+    loadn R1, #1351
+    cmp R0, R1 
+    jeq playerMoveSpaceEatBaby
+
+    loadn R1, #1391
+    cmp R0, R1 
+    jeq playerMoveSpaceEatBaby
+
+    jmp playerMoveFinish
+
+    playerMoveSpaceEatBaby:
+      loadn R0, #1
+      store babyBee, R0 ; stores 1 to baby bee, baby bee has been eaten
+      
+      call render
+      call renderPlayer
 
 playerMoveFinish:
   pop R4
@@ -4092,6 +4443,9 @@ delayPlayerMove1: var #1
 delayPlayerMove2: var #1
   static delayPlayerMove2, #0
 
+babyBee: var #1
+  static babyBee, #0 ; has baby bee been eaten?
+
 
 ; player skins
 skinPlayerFrontStop: var #4
@@ -4107,10 +4461,9 @@ skinPlayerFrontStop: var #4
 ; left leg: 2829
 ; wings: 2062
 
-scriptAlertCurCoordSum: var #1
-  static scriptAlertCurCoordSum + #0, #0 
 
 
+; MOB INFOS
 mob1: var #19
   static mob1 + #0, #0 ; if it's active or not
   static mob1 + #1, #2822 ; left face skin
@@ -4123,9 +4476,9 @@ mob1: var #19
   static mob1 + #8, #0 ; alert bool
   static mob1 + #9, #1 ; side that mob is looking at, 0 for left, 1 for right
   static mob1 + #10, #1 ; delay mobMove1 
-  static mob1 + #11, #65000 ; delay mobMove2
+  static mob1 + #11, #15000 ; delay mobMove2
   static mob1 + #12, #0 ; pointer to script
-  static mob1 + #13, #75 ; alertTimer 1, changed from 75
+  static mob1 + #13, #15 ; alertTimer 1, changed from 75
   static mob1 + #14, #65000 ; alertTimer 2 from max
   static mob1 + #15, #0 ; last movememt, vertical or horizontal
   static mob1 + #16, #scriptAlertMob1 ; pointer
@@ -4148,17 +4501,136 @@ scriptAlertMob1: var #6
   static scriptAlertMob1 + #4, #0 ; side to go 
   static scriptAlertMob1 + #5, #0 ; side to look at
 
+mob2: var #19
+  static mob2 + #0, #0 ; if it's active or not
+  static mob2 + #1, #2822 ; left face skin
+  static mob2 + #2, #2823 ; right face skin
+  static mob2 + #3, #2825 ; left leg skin
+  static mob2 + #4, #2824 ; right leg skin
+  static mob2 + #5, #2053 ; wings
+  static mob2 + #6, #0 ; mobCoordInMap; coord in render will be calculated
+  static mob2 + #7, #0 ; chase bool
+  static mob2 + #8, #0 ; alert bool
+  static mob2 + #9, #1 ; side that mob is looking at, 0 for left, 1 for right
+  static mob2 + #10, #1 ; delay mobMove1 
+  static mob2 + #11, #15000 ; delay mobMove2
+  static mob2 + #12, #0 ; pointer to script
+  static mob2 + #13, #15 ; alertTimer 1, changed from 75
+  static mob2 + #14, #65000 ; alertTimer 2 from max
+  static mob2 + #15, #0 ; last movememt, vertical or horizontal
+  static mob2 + #16, #scriptAlertMob2 ; pointer
+  static mob2 + #17, #0 ; return bool
+  static mob2 + #18, #scriptReturnMob2 ; pointer
+
+scriptReturnMob2: var #6
+  static scriptReturnMob2 + #0, #65535 ; phase number
+  static scriptReturnMob2 + #1, #0 ; coord to go
+  static scriptReturnMob2 + #2, #0 ; side to go
+  static scriptReturnMob2 + #3, #0 ; coord to go
+  static scriptReturnMob2 + #4, #0 ; side to go 
+  static scriptReturnMob2 + #5, #0 ; finish
+
+scriptAlertMob2: var #6
+  static scriptAlertMob2 + #0, #65535 ; phase number
+  static scriptAlertMob2 + #1, #0 ; coord to go
+  static scriptAlertMob2 + #2, #0 ; side to go
+  static scriptAlertMob2 + #3, #0 ; coord to go
+  static scriptAlertMob2 + #4, #0 ; side to go 
+  static scriptAlertMob2 + #5, #0 ; side to look at
+
+mob3: var #19
+  static mob3 + #0, #0 ; if it's active or not
+  static mob3 + #1, #2822 ; left face skin
+  static mob3 + #2, #2823 ; right face skin
+  static mob3 + #3, #2825 ; left leg skin
+  static mob3 + #4, #2824 ; right leg skin
+  static mob3 + #5, #2053 ; wings
+  static mob3 + #6, #0 ; mobCoordInMap; coord in render will be calculated
+  static mob3 + #7, #0 ; chase bool
+  static mob3 + #8, #0 ; alert bool
+  static mob3 + #9, #1 ; side that mob is looking at, 0 for left, 1 for right
+  static mob3 + #10, #1 ; delay mobMove1 
+  static mob3 + #11, #5000; delay mobMove2
+  static mob3 + #12, #0 ; pointer to script
+  static mob3 + #13, #15 ; alertTimer 1, changed from 75
+  static mob3 + #14, #65000 ; alertTimer 2 from max
+  static mob3 + #15, #0 ; last movememt, vertical or horizontal
+  static mob3 + #16, #scriptAlertMob3 ; pointer
+  static mob3 + #17, #0 ; return bool
+  static mob3 + #18, #scriptReturnMob3 ; pointer
+
+scriptReturnMob3: var #6
+  static scriptReturnMob3 + #0, #65535 ; phase number
+  static scriptReturnMob3 + #1, #0 ; coord to go
+  static scriptReturnMob3 + #2, #0 ; side to go
+  static scriptReturnMob3 + #3, #0 ; coord to go
+  static scriptReturnMob3 + #4, #0 ; side to go 
+  static scriptReturnMob3 + #5, #0 ; finish
+
+scriptAlertMob3: var #6
+  static scriptAlertMob3 + #0, #65535 ; phase number
+  static scriptAlertMob3 + #1, #0 ; coord to go
+  static scriptAlertMob3 + #2, #0 ; side to go
+  static scriptAlertMob3 + #3, #0 ; coord to go
+  static scriptAlertMob3 + #4, #0 ; side to go 
+  static scriptAlertMob3 + #5, #0 ; side to look at
+
 ; starts at 841
 script1: var #8
   static script1 + #0, #0 ; phase number
   static script1 + #1, #841
-  static script1 + #2, #'d'
+  static script1 + #2, #'l'
   static script1 + #3, #877
   static script1 + #4, #'r' ; right
   static script1 + #5, #841
   static script1 + #6, #'l' ; left
   static script1 + #7, #0
 
+; starts at 1152
+script2: var #12
+  static script2 + #0, #0 ; phase number
+  static script2 + #1, #1152
+  static script2 + #2, #'l' 
+  static script2 + #3, #1158
+  static script2 + #4, #'r' ; right
+  static script2 + #5, #1438
+  static script2 + #6, #'d' ; down
+  static script2 + #7, #1158
+  static script2 + #8, #'u' ; up
+  static script2 + #9, #1152
+  static script2 + #10, #'l' ; left
+  static script2 + #11, #0
+
+; starts at 1143
+script3: var #24
+  static script3 + #0, #0 ; phase number
+  static script3 + #1, #1143
+  static script3 + #2, #'l'
+  static script3 + #3, #1147
+  static script3 + #4, #'r' ; right
+  static script3 + #5, #1387
+  static script3 + #6, #'d' ; down
+  static script3 + #7, #1385
+  static script3 + #8, #'l' ; left
+  static script3 + #9, #1265
+  static script3 + #10, #'u' ; up
+  static script3 + #11, #1261
+  static script3 + #12, #'l' ; left
+  static script3 + #13, #1101
+  static script3 + #14, #'u' ; up
+  static script3 + #15, #1097
+  static script3 + #16, #'l' ; left
+  static script3 + #17, #977
+  static script3 + #18, #'u' ; up
+  static script3 + #19, #983
+  static script3 + #20, #'r' ; right
+  static script3 + #21, #1143
+  static script3 + #22, #'d' ; down
+  static script3 + #23, #0
+
+
+scriptAlertCurCoordSum: var #1
+  static scriptAlertCurCoordSum + #0, #0 
 
 curLevel: var #1
   static curLevel, #1
@@ -7739,3 +8211,2525 @@ mapTotal : var #1680
   static mapTotal + #1677, #2560
   static mapTotal + #1678, #2560
   static mapTotal + #1679, #2560
+
+menu : var #1200
+  ;Linha 0
+  static menu + #0, #2560
+  static menu + #1, #2560
+  static menu + #2, #2560
+  static menu + #3, #2560
+  static menu + #4, #2560
+  static menu + #5, #2560
+  static menu + #6, #2560
+  static menu + #7, #2560
+  static menu + #8, #2560
+  static menu + #9, #2560
+  static menu + #10, #2560
+  static menu + #11, #2560
+  static menu + #12, #2560
+  static menu + #13, #2560
+  static menu + #14, #2560
+  static menu + #15, #2560
+  static menu + #16, #2560
+  static menu + #17, #2560
+  static menu + #18, #2560
+  static menu + #19, #2560
+  static menu + #20, #2560
+  static menu + #21, #2560
+  static menu + #22, #2560
+  static menu + #23, #2560
+  static menu + #24, #2560
+  static menu + #25, #2560
+  static menu + #26, #2560
+  static menu + #27, #2560
+  static menu + #28, #2560
+  static menu + #29, #2560
+  static menu + #30, #2560
+  static menu + #31, #2560
+  static menu + #32, #2560
+  static menu + #33, #2560
+  static menu + #34, #2560
+  static menu + #35, #2560
+  static menu + #36, #2560
+  static menu + #37, #2560
+  static menu + #38, #2560
+  static menu + #39, #2560
+
+  ;Linha 1
+  static menu + #40, #2560
+  static menu + #41, #2560
+  static menu + #42, #2560
+  static menu + #43, #2560
+  static menu + #44, #2560
+  static menu + #45, #2560
+  static menu + #46, #2560
+  static menu + #47, #2560
+  static menu + #48, #2560
+  static menu + #49, #2560
+  static menu + #50, #2560
+  static menu + #51, #2560
+  static menu + #52, #2560
+  static menu + #53, #2560
+  static menu + #54, #2560
+  static menu + #55, #2560
+  static menu + #56, #2560
+  static menu + #57, #2560
+  static menu + #58, #2560
+  static menu + #59, #2560
+  static menu + #60, #2560
+  static menu + #61, #2560
+  static menu + #62, #2560
+  static menu + #63, #2560
+  static menu + #64, #2560
+  static menu + #65, #2560
+  static menu + #66, #2560
+  static menu + #67, #2560
+  static menu + #68, #2560
+  static menu + #69, #2560
+  static menu + #70, #2560
+  static menu + #71, #2560
+  static menu + #72, #2560
+  static menu + #73, #2560
+  static menu + #74, #2560
+  static menu + #75, #2560
+  static menu + #76, #2560
+  static menu + #77, #2560
+  static menu + #78, #2560
+  static menu + #79, #2560
+
+  ;Linha 2
+  static menu + #80, #2560
+  static menu + #81, #2560
+  static menu + #82, #2560
+  static menu + #83, #2560
+  static menu + #84, #2560
+  static menu + #85, #2560
+  static menu + #86, #2560
+  static menu + #87, #2560
+  static menu + #88, #2560
+  static menu + #89, #2560
+  static menu + #90, #2560
+  static menu + #91, #2560
+  static menu + #92, #2560
+  static menu + #93, #2560
+  static menu + #94, #2560
+  static menu + #95, #2560
+  static menu + #96, #2560
+  static menu + #97, #2560
+  static menu + #98, #2560
+  static menu + #99, #2560
+  static menu + #100, #2560
+  static menu + #101, #2560
+  static menu + #102, #2560
+  static menu + #103, #2560
+  static menu + #104, #2560
+  static menu + #105, #2560
+  static menu + #106, #2560
+  static menu + #107, #2560
+  static menu + #108, #2560
+  static menu + #109, #2560
+  static menu + #110, #2560
+  static menu + #111, #2560
+  static menu + #112, #2560
+  static menu + #113, #2560
+  static menu + #114, #2560
+  static menu + #115, #2560
+  static menu + #116, #2560
+  static menu + #117, #2560
+  static menu + #118, #2560
+  static menu + #119, #2560
+
+  ;Linha 3
+  static menu + #120, #2560
+  static menu + #121, #2560
+  static menu + #122, #2560
+  static menu + #123, #2560
+  static menu + #124, #2560
+  static menu + #125, #2560
+  static menu + #126, #2560
+  static menu + #127, #2560
+  static menu + #128, #2560
+  static menu + #129, #2560
+  static menu + #130, #2560
+  static menu + #131, #2560
+  static menu + #132, #2560
+  static menu + #133, #2560
+  static menu + #134, #2560
+  static menu + #135, #2560
+  static menu + #136, #2560
+  static menu + #137, #2560
+  static menu + #138, #2560
+  static menu + #139, #2560
+  static menu + #140, #2560
+  static menu + #141, #2560
+  static menu + #142, #2560
+  static menu + #143, #2560
+  static menu + #144, #2560
+  static menu + #145, #2560
+  static menu + #146, #2560
+  static menu + #147, #2560
+  static menu + #148, #2560
+  static menu + #149, #2560
+  static menu + #150, #2560
+  static menu + #151, #2560
+  static menu + #152, #2560
+  static menu + #153, #2560
+  static menu + #154, #2560
+  static menu + #155, #2560
+  static menu + #156, #2560
+  static menu + #157, #2560
+  static menu + #158, #2560
+  static menu + #159, #2560
+
+  ;Linha 4
+  static menu + #160, #2560
+  static menu + #161, #2560
+  static menu + #162, #2560
+  static menu + #163, #2560
+  static menu + #164, #2560
+  static menu + #165, #2560
+  static menu + #166, #2560
+  static menu + #167, #2560
+  static menu + #168, #2560
+  static menu + #169, #2560
+  static menu + #170, #2560
+  static menu + #171, #2560
+  static menu + #172, #2560
+  static menu + #173, #2560
+  static menu + #174, #2560
+  static menu + #175, #2560
+  static menu + #176, #2560
+  static menu + #177, #2560
+  static menu + #178, #2560
+  static menu + #179, #2560
+  static menu + #180, #2560
+  static menu + #181, #2560
+  static menu + #182, #2560
+  static menu + #183, #2560
+  static menu + #184, #2560
+  static menu + #185, #2560
+  static menu + #186, #2560
+  static menu + #187, #2560
+  static menu + #188, #2560
+  static menu + #189, #2560
+  static menu + #190, #2560
+  static menu + #191, #2560
+  static menu + #192, #2560
+  static menu + #193, #2560
+  static menu + #194, #2560
+  static menu + #195, #2560
+  static menu + #196, #2560
+  static menu + #197, #2560
+  static menu + #198, #2560
+  static menu + #199, #2560
+
+  ;Linha 5
+  static menu + #200, #2560
+  static menu + #201, #2560
+  static menu + #202, #2560
+  static menu + #203, #2560
+  static menu + #204, #2560
+  static menu + #205, #2560
+  static menu + #206, #2560
+  static menu + #207, #2560
+  static menu + #208, #2560
+  static menu + #209, #2560
+  static menu + #210, #2560
+  static menu + #211, #2560
+  static menu + #212, #2560
+  static menu + #213, #2560
+  static menu + #214, #2560
+  static menu + #215, #2560
+  static menu + #216, #2560
+  static menu + #217, #2560
+  static menu + #218, #2560
+  static menu + #219, #2560
+  static menu + #220, #2560
+  static menu + #221, #2560
+  static menu + #222, #2560
+  static menu + #223, #2560
+  static menu + #224, #2560
+  static menu + #225, #2560
+  static menu + #226, #2560
+  static menu + #227, #2560
+  static menu + #228, #2560
+  static menu + #229, #2560
+  static menu + #230, #2560
+  static menu + #231, #2560
+  static menu + #232, #2560
+  static menu + #233, #2560
+  static menu + #234, #2560
+  static menu + #235, #2560
+  static menu + #236, #2560
+  static menu + #237, #2560
+  static menu + #238, #2560
+  static menu + #239, #2560
+
+  ;Linha 6
+  static menu + #240, #2560
+  static menu + #241, #2560
+  static menu + #242, #2560
+  static menu + #243, #2560
+  static menu + #244, #2560
+  static menu + #245, #2560
+  static menu + #246, #2560
+  static menu + #247, #2560
+  static menu + #248, #2560
+  static menu + #249, #2560
+  static menu + #250, #2560
+  static menu + #251, #2560
+  static menu + #252, #2560
+  static menu + #253, #2560
+  static menu + #254, #2560
+  static menu + #255, #2560
+  static menu + #256, #2560
+  static menu + #257, #2560
+  static menu + #258, #2560
+  static menu + #259, #2560
+  static menu + #260, #2560
+  static menu + #261, #2560
+  static menu + #262, #2560
+  static menu + #263, #2560
+  static menu + #264, #2560
+  static menu + #265, #2560
+  static menu + #266, #2560
+  static menu + #267, #2560
+  static menu + #268, #2560
+  static menu + #269, #2560
+  static menu + #270, #2560
+  static menu + #271, #2560
+  static menu + #272, #2560
+  static menu + #273, #2560
+  static menu + #274, #2560
+  static menu + #275, #2560
+  static menu + #276, #2560
+  static menu + #277, #2560
+  static menu + #278, #2560
+  static menu + #279, #2560
+
+  ;Linha 7
+  static menu + #280, #2560
+  static menu + #281, #2560
+  static menu + #282, #2560
+  static menu + #283, #2560
+  static menu + #284, #2560
+  static menu + #285, #2560
+  static menu + #286, #2560
+  static menu + #287, #2560
+  static menu + #288, #2560
+  static menu + #289, #2560
+  static menu + #290, #2560
+  static menu + #291, #2560
+  static menu + #292, #2560
+  static menu + #293, #2560
+  static menu + #294, #2560
+  static menu + #295, #2560
+  static menu + #296, #2560
+  static menu + #297, #2560
+  static menu + #298, #2560
+  static menu + #299, #2560
+  static menu + #300, #2560
+  static menu + #301, #2560
+  static menu + #302, #2560
+  static menu + #303, #2560
+  static menu + #304, #2560
+  static menu + #305, #2560
+  static menu + #306, #2560
+  static menu + #307, #2560
+  static menu + #308, #2560
+  static menu + #309, #2560
+  static menu + #310, #2560
+  static menu + #311, #2560
+  static menu + #312, #2560
+  static menu + #313, #2560
+  static menu + #314, #2560
+  static menu + #315, #2560
+  static menu + #316, #2560
+  static menu + #317, #2560
+  static menu + #318, #2560
+  static menu + #319, #2560
+
+  ;Linha 8
+  static menu + #320, #2560
+  static menu + #321, #2560
+  static menu + #322, #2560
+  static menu + #323, #2560
+  static menu + #324, #2560
+  static menu + #325, #2560
+  static menu + #326, #2560
+  static menu + #327, #2560
+  static menu + #328, #2560
+  static menu + #329, #2560
+  static menu + #330, #2560
+  static menu + #331, #2560
+  static menu + #332, #2560
+  static menu + #333, #2560
+  static menu + #334, #2560
+  static menu + #335, #2560
+  static menu + #336, #2560
+  static menu + #337, #2560
+  static menu + #338, #2560
+  static menu + #339, #2560
+  static menu + #340, #2560
+  static menu + #341, #2560
+  static menu + #342, #2560
+  static menu + #343, #2560
+  static menu + #344, #2560
+  static menu + #345, #2560
+  static menu + #346, #2560
+  static menu + #347, #2560
+  static menu + #348, #2560
+  static menu + #349, #2560
+  static menu + #350, #2560
+  static menu + #351, #2560
+  static menu + #352, #2560
+  static menu + #353, #2560
+  static menu + #354, #2560
+  static menu + #355, #2560
+  static menu + #356, #2560
+  static menu + #357, #2560
+  static menu + #358, #2560
+  static menu + #359, #2560
+
+  ;Linha 9
+  static menu + #360, #2560
+  static menu + #361, #2560
+  static menu + #362, #2304
+  static menu + #363, #2304
+  static menu + #364, #2304
+  static menu + #365, #0
+  static menu + #366, #2560
+  static menu + #367, #2560
+  static menu + #368, #2560
+  static menu + #369, #2560
+  static menu + #370, #2560
+  static menu + #371, #2560
+  static menu + #372, #2560
+  static menu + #373, #2560
+  static menu + #374, #2560
+  static menu + #375, #2560
+  static menu + #376, #2560
+  static menu + #377, #2560
+  static menu + #378, #2560
+  static menu + #379, #2560
+  static menu + #380, #2560
+  static menu + #381, #2560
+  static menu + #382, #2560
+  static menu + #383, #2560
+  static menu + #384, #2560
+  static menu + #385, #2560
+  static menu + #386, #2560
+  static menu + #387, #2560
+  static menu + #388, #2560
+  static menu + #389, #2560
+  static menu + #390, #2560
+  static menu + #391, #2560
+  static menu + #392, #2560
+  static menu + #393, #2560
+  static menu + #394, #2560
+  static menu + #395, #2560
+  static menu + #396, #2560
+  static menu + #397, #2560
+  static menu + #398, #2560
+  static menu + #399, #2560
+
+  ;Linha 10
+  static menu + #400, #2560
+  static menu + #401, #2304
+  static menu + #402, #2560
+  static menu + #403, #2560
+  static menu + #404, #2560
+  static menu + #405, #2560
+  static menu + #406, #2560
+  static menu + #407, #2560
+  static menu + #408, #2560
+  static menu + #409, #2560
+  static menu + #410, #2560
+  static menu + #411, #2560
+  static menu + #412, #2560
+  static menu + #413, #2560
+  static menu + #414, #2560
+  static menu + #415, #2560
+  static menu + #416, #2560
+  static menu + #417, #2560
+  static menu + #418, #2560
+  static menu + #419, #2560
+  static menu + #420, #2560
+  static menu + #421, #2560
+  static menu + #422, #2560
+  static menu + #423, #2560
+  static menu + #424, #2560
+  static menu + #425, #2560
+  static menu + #426, #2560
+  static menu + #427, #2560
+  static menu + #428, #2560
+  static menu + #429, #2560
+  static menu + #430, #2560
+  static menu + #431, #2560
+  static menu + #432, #2560
+  static menu + #433, #2560
+  static menu + #434, #2560
+  static menu + #435, #2560
+  static menu + #436, #2560
+  static menu + #437, #2560
+  static menu + #438, #2560
+  static menu + #439, #2560
+
+  ;Linha 11
+  static menu + #440, #2560
+  static menu + #441, #2304
+  static menu + #442, #2560
+  static menu + #443, #2560
+  static menu + #444, #2560
+  static menu + #445, #2560
+  static menu + #446, #2560
+  static menu + #447, #2560
+  static menu + #448, #2560
+  static menu + #449, #2560
+  static menu + #450, #2560
+  static menu + #451, #2560
+  static menu + #452, #2560
+  static menu + #453, #2560
+  static menu + #454, #2560
+  static menu + #455, #2560
+  static menu + #456, #2560
+  static menu + #457, #2560
+  static menu + #458, #2560
+  static menu + #459, #1792
+  static menu + #460, #2560
+  static menu + #461, #2560
+  static menu + #462, #2560
+  static menu + #463, #2560
+  static menu + #464, #2560
+  static menu + #465, #2560
+  static menu + #466, #2560
+  static menu + #467, #768
+  static menu + #468, #768
+  static menu + #469, #768
+  static menu + #470, #2560
+  static menu + #471, #2560
+  static menu + #472, #2560
+  static menu + #473, #2560
+  static menu + #474, #2560
+  static menu + #475, #2560
+  static menu + #476, #2560
+  static menu + #477, #2560
+  static menu + #478, #2560
+  static menu + #479, #2560
+
+  ;Linha 12
+  static menu + #480, #2560
+  static menu + #481, #2304
+  static menu + #482, #2560
+  static menu + #483, #2560
+  static menu + #484, #2560
+  static menu + #485, #2560
+  static menu + #486, #0
+  static menu + #487, #2304
+  static menu + #488, #2304
+  static menu + #489, #2560
+  static menu + #490, #2560
+  static menu + #491, #2304
+  static menu + #492, #2304
+  static menu + #493, #2304
+  static menu + #494, #2560
+  static menu + #495, #768
+  static menu + #496, #768
+  static menu + #497, #768
+  static menu + #498, #2560
+  static menu + #499, #2560
+  static menu + #500, #768
+  static menu + #501, #2304
+  static menu + #502, #2560
+  static menu + #503, #2560
+  static menu + #504, #2304
+  static menu + #505, #2304
+  static menu + #506, #768
+  static menu + #507, #2560
+  static menu + #508, #2560
+  static menu + #509, #2560
+  static menu + #510, #768
+  static menu + #511, #2560
+  static menu + #512, #2304
+  static menu + #513, #2304
+  static menu + #514, #2304
+  static menu + #515, #2560
+  static menu + #516, #2304
+  static menu + #517, #2304
+  static menu + #518, #1792
+  static menu + #519, #2560
+
+  ;Linha 13
+  static menu + #520, #2560
+  static menu + #521, #0
+  static menu + #522, #2560
+  static menu + #523, #2560
+  static menu + #524, #2560
+  static menu + #525, #2560
+  static menu + #526, #2560
+  static menu + #527, #2560
+  static menu + #528, #2560
+  static menu + #529, #2304
+  static menu + #530, #768
+  static menu + #531, #2560
+  static menu + #532, #2560
+  static menu + #533, #2560
+  static menu + #534, #768
+  static menu + #535, #2560
+  static menu + #536, #2560
+  static menu + #537, #2560
+  static menu + #538, #768
+  static menu + #539, #2304
+  static menu + #540, #768
+  static menu + #541, #768
+  static menu + #542, #2560
+  static menu + #543, #2560
+  static menu + #544, #2304
+  static menu + #545, #2304
+  static menu + #546, #768
+  static menu + #547, #2560
+  static menu + #548, #2560
+  static menu + #549, #2560
+  static menu + #550, #768
+  static menu + #551, #2304
+  static menu + #552, #2560
+  static menu + #553, #2560
+  static menu + #554, #2560
+  static menu + #555, #768
+  static menu + #556, #2560
+  static menu + #557, #2560
+  static menu + #558, #2304
+  static menu + #559, #2560
+
+  ;Linha 14
+  static menu + #560, #2560
+  static menu + #561, #2304
+  static menu + #562, #2560
+  static menu + #563, #2560
+  static menu + #564, #2560
+  static menu + #565, #2560
+  static menu + #566, #2560
+  static menu + #567, #2304
+  static menu + #568, #0
+  static menu + #569, #2304
+  static menu + #570, #768
+  static menu + #571, #2560
+  static menu + #572, #2560
+  static menu + #573, #2560
+  static menu + #574, #768
+  static menu + #575, #2560
+  static menu + #576, #2560
+  static menu + #577, #2560
+  static menu + #578, #768
+  static menu + #579, #2304
+  static menu + #580, #768
+  static menu + #581, #768
+  static menu + #582, #2560
+  static menu + #583, #2560
+  static menu + #584, #2304
+  static menu + #585, #2304
+  static menu + #586, #768
+  static menu + #587, #2560
+  static menu + #588, #2560
+  static menu + #589, #2560
+  static menu + #590, #768
+  static menu + #591, #2304
+  static menu + #592, #2560
+  static menu + #593, #2560
+  static menu + #594, #2560
+  static menu + #595, #768
+  static menu + #596, #2304
+  static menu + #597, #2304
+  static menu + #598, #2304
+  static menu + #599, #2560
+
+  ;Linha 15
+  static menu + #600, #2560
+  static menu + #601, #2304
+  static menu + #602, #2560
+  static menu + #603, #2560
+  static menu + #604, #2560
+  static menu + #605, #2560
+  static menu + #606, #2304
+  static menu + #607, #2560
+  static menu + #608, #2560
+  static menu + #609, #2304
+  static menu + #610, #768
+  static menu + #611, #2560
+  static menu + #612, #2560
+  static menu + #613, #2560
+  static menu + #614, #768
+  static menu + #615, #2560
+  static menu + #616, #2560
+  static menu + #617, #2560
+  static menu + #618, #768
+  static menu + #619, #2304
+  static menu + #620, #2560
+  static menu + #621, #2304
+  static menu + #622, #2304
+  static menu + #623, #2304
+  static menu + #624, #2304
+  static menu + #625, #2560
+  static menu + #626, #3967
+  static menu + #627, #2560
+  static menu + #628, #2560
+  static menu + #629, #2560
+  static menu + #630, #768
+  static menu + #631, #2304
+  static menu + #632, #2560
+  static menu + #633, #2560
+  static menu + #634, #2560
+  static menu + #635, #768
+  static menu + #636, #2560
+  static menu + #637, #2560
+  static menu + #638, #2560
+  static menu + #639, #2560
+
+  ;Linha 16
+  static menu + #640, #2560
+  static menu + #641, #2560
+  static menu + #642, #2304
+  static menu + #643, #2304
+  static menu + #644, #2304
+  static menu + #645, #2304
+  static menu + #646, #2560
+  static menu + #647, #2304
+  static menu + #648, #2304
+  static menu + #649, #2304
+  static menu + #650, #768
+  static menu + #651, #2560
+  static menu + #652, #2560
+  static menu + #653, #2560
+  static menu + #654, #768
+  static menu + #655, #2560
+  static menu + #656, #2560
+  static menu + #657, #2560
+  static menu + #658, #768
+  static menu + #659, #2304
+  static menu + #660, #2560
+  static menu + #661, #2560
+  static menu + #662, #2304
+  static menu + #663, #2304
+  static menu + #664, #2560
+  static menu + #665, #2560
+  static menu + #666, #2560
+  static menu + #667, #768
+  static menu + #668, #768
+  static menu + #669, #768
+  static menu + #670, #2560
+  static menu + #671, #2304
+  static menu + #672, #2560
+  static menu + #673, #2560
+  static menu + #674, #2560
+  static menu + #675, #2560
+  static menu + #676, #2304
+  static menu + #677, #2304
+  static menu + #678, #2304
+  static menu + #679, #2560
+
+  ;Linha 17
+  static menu + #680, #2560
+  static menu + #681, #2560
+  static menu + #682, #2560
+  static menu + #683, #2560
+  static menu + #684, #2560
+  static menu + #685, #2560
+  static menu + #686, #2560
+  static menu + #687, #2560
+  static menu + #688, #2560
+  static menu + #689, #2560
+  static menu + #690, #2560
+  static menu + #691, #2560
+  static menu + #692, #2560
+  static menu + #693, #2560
+  static menu + #694, #2560
+  static menu + #695, #2560
+  static menu + #696, #2560
+  static menu + #697, #2560
+  static menu + #698, #2560
+  static menu + #699, #2560
+  static menu + #700, #2560
+  static menu + #701, #2560
+  static menu + #702, #2560
+  static menu + #703, #2560
+  static menu + #704, #2560
+  static menu + #705, #2560
+  static menu + #706, #2560
+  static menu + #707, #2560
+  static menu + #708, #2560
+  static menu + #709, #2560
+  static menu + #710, #2560
+  static menu + #711, #2560
+  static menu + #712, #2560
+  static menu + #713, #2560
+  static menu + #714, #2560
+  static menu + #715, #2560
+  static menu + #716, #2560
+  static menu + #717, #2560
+  static menu + #718, #2560
+  static menu + #719, #2560
+
+  ;Linha 18
+  static menu + #720, #2560
+  static menu + #721, #2560
+  static menu + #722, #2560
+  static menu + #723, #2560
+  static menu + #724, #2560
+  static menu + #725, #2560
+  static menu + #726, #2560
+  static menu + #727, #2560
+  static menu + #728, #2560
+  static menu + #729, #2560
+  static menu + #730, #2560
+  static menu + #731, #2560
+  static menu + #732, #2560
+  static menu + #733, #2560
+  static menu + #734, #2560
+  static menu + #735, #2560
+  static menu + #736, #2560
+  static menu + #737, #2048
+  static menu + #738, #2048
+  static menu + #739, #2560
+  static menu + #740, #2048
+  static menu + #741, #2048
+  static menu + #742, #2560
+  static menu + #743, #2560
+  static menu + #744, #2560
+  static menu + #745, #2560
+  static menu + #746, #2560
+  static menu + #747, #2560
+  static menu + #748, #2560
+  static menu + #749, #2560
+  static menu + #750, #2560
+  static menu + #751, #2560
+  static menu + #752, #2560
+  static menu + #753, #2560
+  static menu + #754, #2560
+  static menu + #755, #2560
+  static menu + #756, #2560
+  static menu + #757, #2560
+  static menu + #758, #2560
+  static menu + #759, #2560
+
+  ;Linha 19
+  static menu + #760, #2560
+  static menu + #761, #2560
+  static menu + #762, #2560
+  static menu + #763, #2560
+  static menu + #764, #2560
+  static menu + #765, #2560
+  static menu + #766, #2560
+  static menu + #767, #2560
+  static menu + #768, #2560
+  static menu + #769, #2560
+  static menu + #770, #2560
+  static menu + #771, #2560
+  static menu + #772, #2560
+  static menu + #773, #2560
+  static menu + #774, #2560
+  static menu + #775, #2560
+  static menu + #776, #2560
+  static menu + #777, #2048
+  static menu + #778, #3967
+  static menu + #779, #2048
+  static menu + #780, #3967
+  static menu + #781, #2048
+  static menu + #782, #2560
+  static menu + #783, #2560
+  static menu + #784, #2560
+  static menu + #785, #2560
+  static menu + #786, #2560
+  static menu + #787, #2560
+  static menu + #788, #2560
+  static menu + #789, #2560
+  static menu + #790, #2560
+  static menu + #791, #2560
+  static menu + #792, #2560
+  static menu + #793, #2560
+  static menu + #794, #2560
+  static menu + #795, #2560
+  static menu + #796, #2560
+  static menu + #797, #2560
+  static menu + #798, #2560
+  static menu + #799, #2560
+
+  ;Linha 20
+  static menu + #800, #2560
+  static menu + #801, #2560
+  static menu + #802, #2560
+  static menu + #803, #2560
+  static menu + #804, #2560
+  static menu + #805, #2560
+  static menu + #806, #2560
+  static menu + #807, #2560
+  static menu + #808, #2560
+  static menu + #809, #2560
+  static menu + #810, #2560
+  static menu + #811, #2560
+  static menu + #812, #2560
+  static menu + #813, #2560
+  static menu + #814, #2560
+  static menu + #815, #2560
+  static menu + #816, #2560
+  static menu + #817, #2048
+  static menu + #818, #2048
+  static menu + #819, #3967
+  static menu + #820, #2048
+  static menu + #821, #2048
+  static menu + #822, #2560
+  static menu + #823, #2560
+  static menu + #824, #2560
+  static menu + #825, #2560
+  static menu + #826, #2560
+  static menu + #827, #2560
+  static menu + #828, #2560
+  static menu + #829, #2560
+  static menu + #830, #2560
+  static menu + #831, #2560
+  static menu + #832, #2560
+  static menu + #833, #2560
+  static menu + #834, #2560
+  static menu + #835, #2560
+  static menu + #836, #2560
+  static menu + #837, #2560
+  static menu + #838, #2560
+  static menu + #839, #2560
+
+  ;Linha 21
+  static menu + #840, #2560
+  static menu + #841, #2560
+  static menu + #842, #2128
+  static menu + #843, #2162
+  static menu + #844, #2149
+  static menu + #845, #2163
+  static menu + #846, #2163
+  static menu + #847, #2560
+  static menu + #848, #2560
+  static menu + #849, #2560
+  static menu + #850, #2560
+  static menu + #851, #2560
+  static menu + #852, #2560
+  static menu + #853, #2560
+  static menu + #854, #2560
+  static menu + #855, #2560
+  static menu + #856, #2560
+  static menu + #857, #2560
+  static menu + #858, #2048
+  static menu + #859, #3967
+  static menu + #860, #2048
+  static menu + #861, #2560
+  static menu + #862, #2560
+  static menu + #863, #2560
+  static menu + #864, #3967
+  static menu + #865, #2560
+  static menu + #866, #2560
+  static menu + #867, #2560
+  static menu + #868, #2560
+  static menu + #869, #2560
+  static menu + #870, #2128
+  static menu + #871, #2156
+  static menu + #872, #2149
+  static menu + #873, #2145
+  static menu + #874, #2163
+  static menu + #875, #2149
+  static menu + #876, #2560
+  static menu + #877, #2560
+  static menu + #878, #2560
+  static menu + #879, #2560
+
+  ;Linha 22
+  static menu + #880, #2560
+  static menu + #881, #2560
+  static menu + #882, #2131
+  static menu + #883, #2160
+  static menu + #884, #2145
+  static menu + #885, #2147
+  static menu + #886, #2149
+  static menu + #887, #2560
+  static menu + #888, #2560
+  static menu + #889, #2560
+  static menu + #890, #2560
+  static menu + #891, #2560
+  static menu + #892, #2560
+  static menu + #893, #2560
+  static menu + #894, #2560
+  static menu + #895, #2560
+  static menu + #896, #2816
+  static menu + #897, #3967
+  static menu + #898, #3967
+  static menu + #899, #2816
+  static menu + #900, #3967
+  static menu + #901, #3967
+  static menu + #902, #2816
+  static menu + #903, #3967
+  static menu + #904, #2560
+  static menu + #905, #3967
+  static menu + #906, #2560
+  static menu + #907, #2560
+  static menu + #908, #2560
+  static menu + #909, #2560
+  static menu + #910, #2128
+  static menu + #911, #2156
+  static menu + #912, #2145
+  static menu + #913, #2169
+  static menu + #914, #2560
+  static menu + #915, #2560
+  static menu + #916, #2560
+  static menu + #917, #2560
+  static menu + #918, #2560
+  static menu + #919, #2560
+
+  ;Linha 23
+  static menu + #920, #2560
+  static menu + #921, #2560
+  static menu + #922, #2164
+  static menu + #923, #2159
+  static menu + #924, #2560
+  static menu + #925, #2560
+  static menu + #926, #2560
+  static menu + #927, #2560
+  static menu + #928, #2560
+  static menu + #929, #2560
+  static menu + #930, #2560
+  static menu + #931, #2560
+  static menu + #932, #2560
+  static menu + #933, #2560
+  static menu + #934, #2560
+  static menu + #935, #2816
+  static menu + #936, #2816
+  static menu + #937, #3967
+  static menu + #938, #3967
+  static menu + #939, #2816
+  static menu + #940, #3967
+  static menu + #941, #3967
+  static menu + #942, #2816
+  static menu + #943, #2816
+  static menu + #944, #2560
+  static menu + #945, #2560
+  static menu + #946, #2560
+  static menu + #947, #2560
+  static menu + #948, #2560
+  static menu + #949, #2560
+  static menu + #950, #2164
+  static menu + #951, #2152
+  static menu + #952, #2149
+  static menu + #953, #2560
+  static menu + #954, #2560
+  static menu + #955, #2560
+  static menu + #956, #2560
+  static menu + #957, #2560
+  static menu + #958, #2560
+  static menu + #959, #2560
+
+  ;Linha 24
+  static menu + #960, #2560
+  static menu + #961, #2560
+  static menu + #962, #2128
+  static menu + #963, #2156
+  static menu + #964, #2145
+  static menu + #965, #2169
+  static menu + #966, #2110
+  static menu + #967, #2560
+  static menu + #968, #2560
+  static menu + #969, #2560
+  static menu + #970, #2560
+  static menu + #971, #2560
+  static menu + #972, #2560
+  static menu + #973, #2560
+  static menu + #974, #2560
+  static menu + #975, #2816
+  static menu + #976, #2816
+  static menu + #977, #3967
+  static menu + #978, #3967
+  static menu + #979, #2816
+  static menu + #980, #3967
+  static menu + #981, #3967
+  static menu + #982, #2816
+  static menu + #983, #3967
+  static menu + #984, #2560
+  static menu + #985, #2560
+  static menu + #986, #2560
+  static menu + #987, #2560
+  static menu + #988, #2560
+  static menu + #989, #2560
+  static menu + #990, #2119
+  static menu + #991, #2145
+  static menu + #992, #2157
+  static menu + #993, #2149
+  static menu + #994, #2560
+  static menu + #995, #2560
+  static menu + #996, #2560
+  static menu + #997, #2560
+  static menu + #998, #2560
+  static menu + #999, #2560
+
+  ;Linha 25
+  static menu + #1000, #2560
+  static menu + #1001, #2560
+  static menu + #1002, #2560
+  static menu + #1003, #2560
+  static menu + #1004, #2560
+  static menu + #1005, #2560
+  static menu + #1006, #2560
+  static menu + #1007, #2560
+  static menu + #1008, #2560
+  static menu + #1009, #2560
+  static menu + #1010, #2560
+  static menu + #1011, #2560
+  static menu + #1012, #2560
+  static menu + #1013, #2560
+  static menu + #1014, #3840
+  static menu + #1015, #2816
+  static menu + #1016, #2816
+  static menu + #1017, #3967
+  static menu + #1018, #3967
+  static menu + #1019, #2816
+  static menu + #1020, #3967
+  static menu + #1021, #3967
+  static menu + #1022, #2816
+  static menu + #1023, #2816
+  static menu + #1024, #2560
+  static menu + #1025, #2560
+  static menu + #1026, #2560
+  static menu + #1027, #2560
+  static menu + #1028, #2560
+  static menu + #1029, #2560
+  static menu + #1030, #2145
+  static menu + #1031, #2164
+  static menu + #1032, #2560
+  static menu + #1033, #2560
+  static menu + #1034, #2560
+  static menu + #1035, #2560
+  static menu + #1036, #2560
+  static menu + #1037, #2560
+  static menu + #1038, #2560
+  static menu + #1039, #2560
+
+  ;Linha 26
+  static menu + #1040, #2560
+  static menu + #1041, #2560
+  static menu + #1042, #2560
+  static menu + #1043, #2560
+  static menu + #1044, #2560
+  static menu + #1045, #2560
+  static menu + #1046, #2560
+  static menu + #1047, #2560
+  static menu + #1048, #2560
+  static menu + #1049, #2560
+  static menu + #1050, #2560
+  static menu + #1051, #2560
+  static menu + #1052, #2560
+  static menu + #1053, #2560
+  static menu + #1054, #2560
+  static menu + #1055, #2816
+  static menu + #1056, #2816
+  static menu + #1057, #3967
+  static menu + #1058, #3967
+  static menu + #1059, #2816
+  static menu + #1060, #3967
+  static menu + #1061, #3967
+  static menu + #1062, #2816
+  static menu + #1063, #2816
+  static menu + #1064, #2560
+  static menu + #1065, #2560
+  static menu + #1066, #2560
+  static menu + #1067, #2560
+  static menu + #1068, #2560
+  static menu + #1069, #2560
+  static menu + #1070, #2100
+  static menu + #1071, #2096
+  static menu + #1072, #2125
+  static menu + #1073, #2120
+  static menu + #1074, #2170
+  static menu + #1075, #2560
+  static menu + #1076, #2560
+  static menu + #1077, #2560
+  static menu + #1078, #2560
+  static menu + #1079, #2560
+
+  ;Linha 27
+  static menu + #1080, #2560
+  static menu + #1081, #2560
+  static menu + #1082, #2560
+  static menu + #1083, #2560
+  static menu + #1084, #2560
+  static menu + #1085, #2560
+  static menu + #1086, #2560
+  static menu + #1087, #2560
+  static menu + #1088, #2560
+  static menu + #1089, #2560
+  static menu + #1090, #2560
+  static menu + #1091, #2560
+  static menu + #1092, #2560
+  static menu + #1093, #2560
+  static menu + #1094, #2560
+  static menu + #1095, #2560
+  static menu + #1096, #2816
+  static menu + #1097, #3967
+  static menu + #1098, #3967
+  static menu + #1099, #2816
+  static menu + #1100, #3967
+  static menu + #1101, #3967
+  static menu + #1102, #2816
+  static menu + #1103, #2560
+  static menu + #1104, #2560
+  static menu + #1105, #2560
+  static menu + #1106, #2560
+  static menu + #1107, #2560
+  static menu + #1108, #2560
+  static menu + #1109, #2560
+  static menu + #1110, #2560
+  static menu + #1111, #2560
+  static menu + #1112, #2560
+  static menu + #1113, #2560
+  static menu + #1114, #2560
+  static menu + #1115, #2560
+  static menu + #1116, #2560
+  static menu + #1117, #2560
+  static menu + #1118, #2560
+  static menu + #1119, #2560
+
+  ;Linha 28
+  static menu + #1120, #2560
+  static menu + #1121, #2560
+  static menu + #1122, #2560
+  static menu + #1123, #2560
+  static menu + #1124, #2560
+  static menu + #1125, #2560
+  static menu + #1126, #2560
+  static menu + #1127, #2560
+  static menu + #1128, #2560
+  static menu + #1129, #2560
+  static menu + #1130, #2560
+  static menu + #1131, #2560
+  static menu + #1132, #2560
+  static menu + #1133, #2560
+  static menu + #1134, #2560
+  static menu + #1135, #2560
+  static menu + #1136, #2560
+  static menu + #1137, #2560
+  static menu + #1138, #2560
+  static menu + #1139, #2560
+  static menu + #1140, #2560
+  static menu + #1141, #2560
+  static menu + #1142, #2560
+  static menu + #1143, #2560
+  static menu + #1144, #2560
+  static menu + #1145, #2560
+  static menu + #1146, #2560
+  static menu + #1147, #2560
+  static menu + #1148, #2560
+  static menu + #1149, #2560
+  static menu + #1150, #2560
+  static menu + #1151, #2560
+  static menu + #1152, #2560
+  static menu + #1153, #2560
+  static menu + #1154, #2560
+  static menu + #1155, #2560
+  static menu + #1156, #2560
+  static menu + #1157, #2560
+  static menu + #1158, #2560
+  static menu + #1159, #2560
+
+  ;Linha 29
+  static menu + #1160, #2560
+  static menu + #1161, #2560
+  static menu + #1162, #2560
+  static menu + #1163, #2560
+  static menu + #1164, #2560
+  static menu + #1165, #2560
+  static menu + #1166, #2560
+  static menu + #1167, #2560
+  static menu + #1168, #2560
+  static menu + #1169, #2560
+  static menu + #1170, #2560
+  static menu + #1171, #2560
+  static menu + #1172, #2560
+  static menu + #1173, #2560
+  static menu + #1174, #2560
+  static menu + #1175, #2560
+  static menu + #1176, #2560
+  static menu + #1177, #2560
+  static menu + #1178, #2560
+  static menu + #1179, #2560
+  static menu + #1180, #2560
+  static menu + #1181, #2560
+  static menu + #1182, #2560
+  static menu + #1183, #2560
+  static menu + #1184, #2560
+  static menu + #1185, #2560
+  static menu + #1186, #2560
+  static menu + #1187, #2560
+  static menu + #1188, #2560
+  static menu + #1189, #2560
+  static menu + #1190, #2560
+  static menu + #1191, #2560
+  static menu + #1192, #2560
+  static menu + #1193, #2560
+  static menu + #1194, #2560
+  static menu + #1195, #2560
+  static menu + #1196, #2560
+  static menu + #1197, #2560
+  static menu + #1198, #2560
+  static menu + #1199, #2560
+
+nextlevel : var #1200
+  ;Linha 0
+  static nextlevel + #0, #3072
+  static nextlevel + #1, #3072
+  static nextlevel + #2, #3072
+  static nextlevel + #3, #3072
+  static nextlevel + #4, #3072
+  static nextlevel + #5, #3072
+  static nextlevel + #6, #3072
+  static nextlevel + #7, #3072
+  static nextlevel + #8, #3072
+  static nextlevel + #9, #3072
+  static nextlevel + #10, #3072
+  static nextlevel + #11, #3072
+  static nextlevel + #12, #3072
+  static nextlevel + #13, #3072
+  static nextlevel + #14, #3072
+  static nextlevel + #15, #3072
+  static nextlevel + #16, #3072
+  static nextlevel + #17, #3072
+  static nextlevel + #18, #3072
+  static nextlevel + #19, #3072
+  static nextlevel + #20, #3072
+  static nextlevel + #21, #3072
+  static nextlevel + #22, #3072
+  static nextlevel + #23, #3072
+  static nextlevel + #24, #3072
+  static nextlevel + #25, #3072
+  static nextlevel + #26, #3072
+  static nextlevel + #27, #3072
+  static nextlevel + #28, #3072
+  static nextlevel + #29, #3072
+  static nextlevel + #30, #3072
+  static nextlevel + #31, #3072
+  static nextlevel + #32, #3072
+  static nextlevel + #33, #3072
+  static nextlevel + #34, #3072
+  static nextlevel + #35, #3072
+  static nextlevel + #36, #3072
+  static nextlevel + #37, #3072
+  static nextlevel + #38, #3072
+  static nextlevel + #39, #3072
+
+  ;Linha 1
+  static nextlevel + #40, #3072
+  static nextlevel + #41, #3072
+  static nextlevel + #42, #3072
+  static nextlevel + #43, #3072
+  static nextlevel + #44, #3072
+  static nextlevel + #45, #3072
+  static nextlevel + #46, #3072
+  static nextlevel + #47, #3072
+  static nextlevel + #48, #3072
+  static nextlevel + #49, #3072
+  static nextlevel + #50, #3072
+  static nextlevel + #51, #3072
+  static nextlevel + #52, #3072
+  static nextlevel + #53, #3072
+  static nextlevel + #54, #3072
+  static nextlevel + #55, #3072
+  static nextlevel + #56, #3072
+  static nextlevel + #57, #3072
+  static nextlevel + #58, #3072
+  static nextlevel + #59, #3072
+  static nextlevel + #60, #3072
+  static nextlevel + #61, #3072
+  static nextlevel + #62, #3072
+  static nextlevel + #63, #3072
+  static nextlevel + #64, #3072
+  static nextlevel + #65, #3072
+  static nextlevel + #66, #3072
+  static nextlevel + #67, #3072
+  static nextlevel + #68, #3072
+  static nextlevel + #69, #3072
+  static nextlevel + #70, #3072
+  static nextlevel + #71, #3072
+  static nextlevel + #72, #3072
+  static nextlevel + #73, #3072
+  static nextlevel + #74, #3072
+  static nextlevel + #75, #3072
+  static nextlevel + #76, #3072
+  static nextlevel + #77, #3072
+  static nextlevel + #78, #3072
+  static nextlevel + #79, #3072
+
+  ;Linha 2
+  static nextlevel + #80, #3072
+  static nextlevel + #81, #3072
+  static nextlevel + #82, #3072
+  static nextlevel + #83, #3072
+  static nextlevel + #84, #3072
+  static nextlevel + #85, #3072
+  static nextlevel + #86, #1024
+  static nextlevel + #87, #1024
+  static nextlevel + #88, #1024
+  static nextlevel + #89, #1024
+  static nextlevel + #90, #1024
+  static nextlevel + #91, #1024
+  static nextlevel + #92, #3072
+  static nextlevel + #93, #3072
+  static nextlevel + #94, #3072
+  static nextlevel + #95, #3072
+  static nextlevel + #96, #1024
+  static nextlevel + #97, #1024
+  static nextlevel + #98, #1024
+  static nextlevel + #99, #1024
+  static nextlevel + #100, #1024
+  static nextlevel + #101, #1024
+  static nextlevel + #102, #3072
+  static nextlevel + #103, #3072
+  static nextlevel + #104, #3072
+  static nextlevel + #105, #3072
+  static nextlevel + #106, #1024
+  static nextlevel + #107, #1024
+  static nextlevel + #108, #1024
+  static nextlevel + #109, #1024
+  static nextlevel + #110, #1024
+  static nextlevel + #111, #1024
+  static nextlevel + #112, #3072
+  static nextlevel + #113, #3072
+  static nextlevel + #114, #3072
+  static nextlevel + #115, #3072
+  static nextlevel + #116, #3072
+  static nextlevel + #117, #3072
+  static nextlevel + #118, #3072
+  static nextlevel + #119, #3072
+
+  ;Linha 3
+  static nextlevel + #120, #3072
+  static nextlevel + #121, #3072
+  static nextlevel + #122, #3072
+  static nextlevel + #123, #3072
+  static nextlevel + #124, #3072
+  static nextlevel + #125, #3072
+  static nextlevel + #126, #3072
+  static nextlevel + #127, #3072
+  static nextlevel + #128, #3072
+  static nextlevel + #129, #3072
+  static nextlevel + #130, #3072
+  static nextlevel + #131, #3072
+  static nextlevel + #132, #3072
+  static nextlevel + #133, #3072
+  static nextlevel + #134, #3072
+  static nextlevel + #135, #3072
+  static nextlevel + #136, #3072
+  static nextlevel + #137, #3072
+  static nextlevel + #138, #3072
+  static nextlevel + #139, #3072
+  static nextlevel + #140, #3072
+  static nextlevel + #141, #3072
+  static nextlevel + #142, #3072
+  static nextlevel + #143, #3072
+  static nextlevel + #144, #3072
+  static nextlevel + #145, #3072
+  static nextlevel + #146, #3072
+  static nextlevel + #147, #3072
+  static nextlevel + #148, #3072
+  static nextlevel + #149, #3072
+  static nextlevel + #150, #3072
+  static nextlevel + #151, #3072
+  static nextlevel + #152, #3072
+  static nextlevel + #153, #3072
+  static nextlevel + #154, #3072
+  static nextlevel + #155, #3072
+  static nextlevel + #156, #3072
+  static nextlevel + #157, #3072
+  static nextlevel + #158, #3072
+  static nextlevel + #159, #3072
+
+  ;Linha 4
+  static nextlevel + #160, #3072
+  static nextlevel + #161, #3072
+  static nextlevel + #162, #3072
+  static nextlevel + #163, #3072
+  static nextlevel + #164, #3072
+  static nextlevel + #165, #3072
+  static nextlevel + #166, #3072
+  static nextlevel + #167, #3072
+  static nextlevel + #168, #3072
+  static nextlevel + #169, #3072
+  static nextlevel + #170, #3072
+  static nextlevel + #171, #3072
+  static nextlevel + #172, #3072
+  static nextlevel + #173, #3072
+  static nextlevel + #174, #3072
+  static nextlevel + #175, #3072
+  static nextlevel + #176, #3072
+  static nextlevel + #177, #3072
+  static nextlevel + #178, #3072
+  static nextlevel + #179, #3072
+  static nextlevel + #180, #3072
+  static nextlevel + #181, #3072
+  static nextlevel + #182, #3072
+  static nextlevel + #183, #3072
+  static nextlevel + #184, #3072
+  static nextlevel + #185, #3072
+  static nextlevel + #186, #3072
+  static nextlevel + #187, #3072
+  static nextlevel + #188, #3072
+  static nextlevel + #189, #3072
+  static nextlevel + #190, #3072
+  static nextlevel + #191, #3072
+  static nextlevel + #192, #3072
+  static nextlevel + #193, #3072
+  static nextlevel + #194, #3072
+  static nextlevel + #195, #3072
+  static nextlevel + #196, #3072
+  static nextlevel + #197, #3072
+  static nextlevel + #198, #3072
+  static nextlevel + #199, #3072
+
+  ;Linha 5
+  static nextlevel + #200, #3072
+  static nextlevel + #201, #1024
+  static nextlevel + #202, #1024
+  static nextlevel + #203, #1024
+  static nextlevel + #204, #1024
+  static nextlevel + #205, #1024
+  static nextlevel + #206, #1024
+  static nextlevel + #207, #3072
+  static nextlevel + #208, #3072
+  static nextlevel + #209, #3072
+  static nextlevel + #210, #3072
+  static nextlevel + #211, #1024
+  static nextlevel + #212, #1024
+  static nextlevel + #213, #1024
+  static nextlevel + #214, #1024
+  static nextlevel + #215, #1024
+  static nextlevel + #216, #1024
+  static nextlevel + #217, #3072
+  static nextlevel + #218, #3072
+  static nextlevel + #219, #3072
+  static nextlevel + #220, #3072
+  static nextlevel + #221, #1024
+  static nextlevel + #222, #1024
+  static nextlevel + #223, #1024
+  static nextlevel + #224, #1024
+  static nextlevel + #225, #1024
+  static nextlevel + #226, #1024
+  static nextlevel + #227, #3072
+  static nextlevel + #228, #3072
+  static nextlevel + #229, #3072
+  static nextlevel + #230, #3072
+  static nextlevel + #231, #1024
+  static nextlevel + #232, #1024
+  static nextlevel + #233, #1024
+  static nextlevel + #234, #1024
+  static nextlevel + #235, #1024
+  static nextlevel + #236, #1024
+  static nextlevel + #237, #3072
+  static nextlevel + #238, #3072
+  static nextlevel + #239, #3072
+
+  ;Linha 6
+  static nextlevel + #240, #3072
+  static nextlevel + #241, #3072
+  static nextlevel + #242, #3072
+  static nextlevel + #243, #3072
+  static nextlevel + #244, #3072
+  static nextlevel + #245, #3072
+  static nextlevel + #246, #3072
+  static nextlevel + #247, #3072
+  static nextlevel + #248, #3072
+  static nextlevel + #249, #3072
+  static nextlevel + #250, #3072
+  static nextlevel + #251, #3072
+  static nextlevel + #252, #3072
+  static nextlevel + #253, #3072
+  static nextlevel + #254, #3072
+  static nextlevel + #255, #3072
+  static nextlevel + #256, #3072
+  static nextlevel + #257, #3072
+  static nextlevel + #258, #3072
+  static nextlevel + #259, #3072
+  static nextlevel + #260, #3072
+  static nextlevel + #261, #3072
+  static nextlevel + #262, #3072
+  static nextlevel + #263, #3072
+  static nextlevel + #264, #3072
+  static nextlevel + #265, #3072
+  static nextlevel + #266, #3072
+  static nextlevel + #267, #3072
+  static nextlevel + #268, #3072
+  static nextlevel + #269, #3072
+  static nextlevel + #270, #3072
+  static nextlevel + #271, #3072
+  static nextlevel + #272, #3072
+  static nextlevel + #273, #3072
+  static nextlevel + #274, #3072
+  static nextlevel + #275, #3072
+  static nextlevel + #276, #3072
+  static nextlevel + #277, #3072
+  static nextlevel + #278, #3072
+  static nextlevel + #279, #3072
+
+  ;Linha 7
+  static nextlevel + #280, #3072
+  static nextlevel + #281, #3072
+  static nextlevel + #282, #3072
+  static nextlevel + #283, #3072
+  static nextlevel + #284, #3072
+  static nextlevel + #285, #3072
+  static nextlevel + #286, #3072
+  static nextlevel + #287, #3072
+  static nextlevel + #288, #3072
+  static nextlevel + #289, #3072
+  static nextlevel + #290, #3072
+  static nextlevel + #291, #3072
+  static nextlevel + #292, #3072
+  static nextlevel + #293, #3072
+  static nextlevel + #294, #3072
+  static nextlevel + #295, #3072
+  static nextlevel + #296, #3072
+  static nextlevel + #297, #3072
+  static nextlevel + #298, #3072
+  static nextlevel + #299, #3072
+  static nextlevel + #300, #3072
+  static nextlevel + #301, #3072
+  static nextlevel + #302, #3072
+  static nextlevel + #303, #3072
+  static nextlevel + #304, #3072
+  static nextlevel + #305, #3072
+  static nextlevel + #306, #3072
+  static nextlevel + #307, #3072
+  static nextlevel + #308, #3072
+  static nextlevel + #309, #3072
+  static nextlevel + #310, #3072
+  static nextlevel + #311, #3072
+  static nextlevel + #312, #3072
+  static nextlevel + #313, #3072
+  static nextlevel + #314, #3072
+  static nextlevel + #315, #3072
+  static nextlevel + #316, #3072
+  static nextlevel + #317, #3072
+  static nextlevel + #318, #3072
+  static nextlevel + #319, #3072
+
+  ;Linha 8
+  static nextlevel + #320, #3072
+  static nextlevel + #321, #3072
+  static nextlevel + #322, #3072
+  static nextlevel + #323, #3072
+  static nextlevel + #324, #3072
+  static nextlevel + #325, #3072
+  static nextlevel + #326, #1024
+  static nextlevel + #327, #1024
+  static nextlevel + #328, #1024
+  static nextlevel + #329, #1024
+  static nextlevel + #330, #1024
+  static nextlevel + #331, #1024
+  static nextlevel + #332, #3072
+  static nextlevel + #333, #3072
+  static nextlevel + #334, #3072
+  static nextlevel + #335, #3072
+  static nextlevel + #336, #1024
+  static nextlevel + #337, #1024
+  static nextlevel + #338, #1024
+  static nextlevel + #339, #1024
+  static nextlevel + #340, #1024
+  static nextlevel + #341, #1024
+  static nextlevel + #342, #3072
+  static nextlevel + #343, #3072
+  static nextlevel + #344, #3072
+  static nextlevel + #345, #3072
+  static nextlevel + #346, #1024
+  static nextlevel + #347, #1024
+  static nextlevel + #348, #1024
+  static nextlevel + #349, #1024
+  static nextlevel + #350, #1024
+  static nextlevel + #351, #1024
+  static nextlevel + #352, #3072
+  static nextlevel + #353, #3072
+  static nextlevel + #354, #3072
+  static nextlevel + #355, #3072
+  static nextlevel + #356, #3072
+  static nextlevel + #357, #3072
+  static nextlevel + #358, #3072
+  static nextlevel + #359, #3072
+
+  ;Linha 9
+  static nextlevel + #360, #3072
+  static nextlevel + #361, #3072
+  static nextlevel + #362, #3072
+  static nextlevel + #363, #3072
+  static nextlevel + #364, #3072
+  static nextlevel + #365, #3072
+  static nextlevel + #366, #3072
+  static nextlevel + #367, #3072
+  static nextlevel + #368, #3072
+  static nextlevel + #369, #3072
+  static nextlevel + #370, #3072
+  static nextlevel + #371, #3072
+  static nextlevel + #372, #3072
+  static nextlevel + #373, #3072
+  static nextlevel + #374, #3072
+  static nextlevel + #375, #3072
+  static nextlevel + #376, #3072
+  static nextlevel + #377, #3072
+  static nextlevel + #378, #3072
+  static nextlevel + #379, #3072
+  static nextlevel + #380, #3072
+  static nextlevel + #381, #3072
+  static nextlevel + #382, #3072
+  static nextlevel + #383, #3072
+  static nextlevel + #384, #3072
+  static nextlevel + #385, #3072
+  static nextlevel + #386, #3072
+  static nextlevel + #387, #3072
+  static nextlevel + #388, #3072
+  static nextlevel + #389, #3072
+  static nextlevel + #390, #3072
+  static nextlevel + #391, #3072
+  static nextlevel + #392, #3072
+  static nextlevel + #393, #3072
+  static nextlevel + #394, #3072
+  static nextlevel + #395, #3072
+  static nextlevel + #396, #3072
+  static nextlevel + #397, #3072
+  static nextlevel + #398, #3072
+  static nextlevel + #399, #3072
+
+  ;Linha 10
+  static nextlevel + #400, #3072
+  static nextlevel + #401, #3072
+  static nextlevel + #402, #3072
+  static nextlevel + #403, #3072
+  static nextlevel + #404, #3072
+  static nextlevel + #405, #3072
+  static nextlevel + #406, #3072
+  static nextlevel + #407, #2304
+  static nextlevel + #408, #2304
+  static nextlevel + #409, #3072
+  static nextlevel + #410, #3072
+  static nextlevel + #411, #2304
+  static nextlevel + #412, #2304
+  static nextlevel + #413, #3072
+  static nextlevel + #414, #3072
+  static nextlevel + #415, #3072
+  static nextlevel + #416, #3072
+  static nextlevel + #417, #3072
+  static nextlevel + #418, #3072
+  static nextlevel + #419, #3072
+  static nextlevel + #420, #3072
+  static nextlevel + #421, #3072
+  static nextlevel + #422, #3072
+  static nextlevel + #423, #3072
+  static nextlevel + #424, #3072
+  static nextlevel + #425, #3072
+  static nextlevel + #426, #3072
+  static nextlevel + #427, #3072
+  static nextlevel + #428, #3072
+  static nextlevel + #429, #3072
+  static nextlevel + #430, #3072
+  static nextlevel + #431, #3072
+  static nextlevel + #432, #3072
+  static nextlevel + #433, #3072
+  static nextlevel + #434, #3072
+  static nextlevel + #435, #3072
+  static nextlevel + #436, #3072
+  static nextlevel + #437, #3072
+  static nextlevel + #438, #3072
+  static nextlevel + #439, #3072
+
+  ;Linha 11
+  static nextlevel + #440, #3072
+  static nextlevel + #441, #1024
+  static nextlevel + #442, #1024
+  static nextlevel + #443, #1024
+  static nextlevel + #444, #1024
+  static nextlevel + #445, #1024
+  static nextlevel + #446, #1024
+  static nextlevel + #447, #2304
+  static nextlevel + #448, #2304
+  static nextlevel + #449, #2304
+  static nextlevel + #450, #3072
+  static nextlevel + #451, #2304
+  static nextlevel + #452, #2304
+  static nextlevel + #453, #2304
+  static nextlevel + #454, #2304
+  static nextlevel + #455, #2304
+  static nextlevel + #456, #2304
+  static nextlevel + #457, #2304
+  static nextlevel + #458, #2304
+  static nextlevel + #459, #3072
+  static nextlevel + #460, #3072
+  static nextlevel + #461, #2304
+  static nextlevel + #462, #2304
+  static nextlevel + #463, #2304
+  static nextlevel + #464, #1024
+  static nextlevel + #465, #1024
+  static nextlevel + #466, #1024
+  static nextlevel + #467, #3072
+  static nextlevel + #468, #3072
+  static nextlevel + #469, #3072
+  static nextlevel + #470, #3072
+  static nextlevel + #471, #1024
+  static nextlevel + #472, #1024
+  static nextlevel + #473, #1024
+  static nextlevel + #474, #1024
+  static nextlevel + #475, #1024
+  static nextlevel + #476, #1024
+  static nextlevel + #477, #3072
+  static nextlevel + #478, #3072
+  static nextlevel + #479, #3072
+
+  ;Linha 12
+  static nextlevel + #480, #3072
+  static nextlevel + #481, #3072
+  static nextlevel + #482, #3072
+  static nextlevel + #483, #3072
+  static nextlevel + #484, #3072
+  static nextlevel + #485, #3072
+  static nextlevel + #486, #3072
+  static nextlevel + #487, #2304
+  static nextlevel + #488, #2304
+  static nextlevel + #489, #2304
+  static nextlevel + #490, #2304
+  static nextlevel + #491, #2304
+  static nextlevel + #492, #2304
+  static nextlevel + #493, #2304
+  static nextlevel + #494, #3072
+  static nextlevel + #495, #3072
+  static nextlevel + #496, #2304
+  static nextlevel + #497, #3072
+  static nextlevel + #498, #2304
+  static nextlevel + #499, #2304
+  static nextlevel + #500, #2304
+  static nextlevel + #501, #2304
+  static nextlevel + #502, #3072
+  static nextlevel + #503, #2304
+  static nextlevel + #504, #2304
+  static nextlevel + #505, #2304
+  static nextlevel + #506, #3072
+  static nextlevel + #507, #3072
+  static nextlevel + #508, #3072
+  static nextlevel + #509, #3072
+  static nextlevel + #510, #3072
+  static nextlevel + #511, #3072
+  static nextlevel + #512, #3072
+  static nextlevel + #513, #3072
+  static nextlevel + #514, #3072
+  static nextlevel + #515, #3072
+  static nextlevel + #516, #3072
+  static nextlevel + #517, #3072
+  static nextlevel + #518, #3072
+  static nextlevel + #519, #3072
+
+  ;Linha 13
+  static nextlevel + #520, #3072
+  static nextlevel + #521, #3072
+  static nextlevel + #522, #3072
+  static nextlevel + #523, #3072
+  static nextlevel + #524, #3072
+  static nextlevel + #525, #3072
+  static nextlevel + #526, #3072
+  static nextlevel + #527, #2304
+  static nextlevel + #528, #2304
+  static nextlevel + #529, #2304
+  static nextlevel + #530, #2304
+  static nextlevel + #531, #2304
+  static nextlevel + #532, #2304
+  static nextlevel + #533, #2304
+  static nextlevel + #534, #2304
+  static nextlevel + #535, #2304
+  static nextlevel + #536, #2304
+  static nextlevel + #537, #3072
+  static nextlevel + #538, #3072
+  static nextlevel + #539, #3072
+  static nextlevel + #540, #3072
+  static nextlevel + #541, #3072
+  static nextlevel + #542, #3072
+  static nextlevel + #543, #2304
+  static nextlevel + #544, #3072
+  static nextlevel + #545, #3072
+  static nextlevel + #546, #3072
+  static nextlevel + #547, #3072
+  static nextlevel + #548, #3072
+  static nextlevel + #549, #3072
+  static nextlevel + #550, #3072
+  static nextlevel + #551, #3072
+  static nextlevel + #552, #3072
+  static nextlevel + #553, #3072
+  static nextlevel + #554, #3072
+  static nextlevel + #555, #3072
+  static nextlevel + #556, #3072
+  static nextlevel + #557, #3072
+  static nextlevel + #558, #3072
+  static nextlevel + #559, #3072
+
+  ;Linha 14
+  static nextlevel + #560, #3072
+  static nextlevel + #561, #3072
+  static nextlevel + #562, #3072
+  static nextlevel + #563, #3072
+  static nextlevel + #564, #3072
+  static nextlevel + #565, #3072
+  static nextlevel + #566, #1024
+  static nextlevel + #567, #2304
+  static nextlevel + #568, #2304
+  static nextlevel + #569, #1024
+  static nextlevel + #570, #2304
+  static nextlevel + #571, #2304
+  static nextlevel + #572, #2304
+  static nextlevel + #573, #2304
+  static nextlevel + #574, #3072
+  static nextlevel + #575, #3072
+  static nextlevel + #576, #1024
+  static nextlevel + #577, #1024
+  static nextlevel + #578, #2304
+  static nextlevel + #579, #2304
+  static nextlevel + #580, #2304
+  static nextlevel + #581, #2304
+  static nextlevel + #582, #3072
+  static nextlevel + #583, #2304
+  static nextlevel + #584, #3072
+  static nextlevel + #585, #3072
+  static nextlevel + #586, #1024
+  static nextlevel + #587, #1024
+  static nextlevel + #588, #1024
+  static nextlevel + #589, #1024
+  static nextlevel + #590, #1024
+  static nextlevel + #591, #1024
+  static nextlevel + #592, #3072
+  static nextlevel + #593, #3072
+  static nextlevel + #594, #3072
+  static nextlevel + #595, #3072
+  static nextlevel + #596, #3072
+  static nextlevel + #597, #3072
+  static nextlevel + #598, #3072
+  static nextlevel + #599, #3072
+
+  ;Linha 15
+  static nextlevel + #600, #3072
+  static nextlevel + #601, #3072
+  static nextlevel + #602, #3072
+  static nextlevel + #603, #3072
+  static nextlevel + #604, #3072
+  static nextlevel + #605, #3072
+  static nextlevel + #606, #3072
+  static nextlevel + #607, #2304
+  static nextlevel + #608, #2304
+  static nextlevel + #609, #3072
+  static nextlevel + #610, #3072
+  static nextlevel + #611, #2304
+  static nextlevel + #612, #2304
+  static nextlevel + #613, #3072
+  static nextlevel + #614, #2304
+  static nextlevel + #615, #2304
+  static nextlevel + #616, #2304
+  static nextlevel + #617, #2304
+  static nextlevel + #618, #2304
+  static nextlevel + #619, #3072
+  static nextlevel + #620, #3072
+  static nextlevel + #621, #2304
+  static nextlevel + #622, #2304
+  static nextlevel + #623, #3072
+  static nextlevel + #624, #2304
+  static nextlevel + #625, #2304
+  static nextlevel + #626, #3072
+  static nextlevel + #627, #3072
+  static nextlevel + #628, #3072
+  static nextlevel + #629, #3072
+  static nextlevel + #630, #3072
+  static nextlevel + #631, #3072
+  static nextlevel + #632, #3072
+  static nextlevel + #633, #2304
+  static nextlevel + #634, #2304
+  static nextlevel + #635, #2304
+  static nextlevel + #636, #3072
+  static nextlevel + #637, #3072
+  static nextlevel + #638, #3072
+  static nextlevel + #639, #3072
+
+  ;Linha 16
+  static nextlevel + #640, #3072
+  static nextlevel + #641, #3072
+  static nextlevel + #642, #3072
+  static nextlevel + #643, #3072
+  static nextlevel + #644, #3072
+  static nextlevel + #645, #3072
+  static nextlevel + #646, #3072
+  static nextlevel + #647, #3072
+  static nextlevel + #648, #3072
+  static nextlevel + #649, #3072
+  static nextlevel + #650, #3072
+  static nextlevel + #651, #3072
+  static nextlevel + #652, #3072
+  static nextlevel + #653, #3072
+  static nextlevel + #654, #3072
+  static nextlevel + #655, #3072
+  static nextlevel + #656, #3072
+  static nextlevel + #657, #3072
+  static nextlevel + #658, #3072
+  static nextlevel + #659, #3072
+  static nextlevel + #660, #3072
+  static nextlevel + #661, #3072
+  static nextlevel + #662, #3072
+  static nextlevel + #663, #3072
+  static nextlevel + #664, #3072
+  static nextlevel + #665, #3072
+  static nextlevel + #666, #3072
+  static nextlevel + #667, #3072
+  static nextlevel + #668, #3072
+  static nextlevel + #669, #3072
+  static nextlevel + #670, #3072
+  static nextlevel + #671, #3072
+  static nextlevel + #672, #2304
+  static nextlevel + #673, #3072
+  static nextlevel + #674, #3072
+  static nextlevel + #675, #3072
+  static nextlevel + #676, #2304
+  static nextlevel + #677, #3072
+  static nextlevel + #678, #3072
+  static nextlevel + #679, #3072
+
+  ;Linha 17
+  static nextlevel + #680, #3072
+  static nextlevel + #681, #1024
+  static nextlevel + #682, #1024
+  static nextlevel + #683, #1024
+  static nextlevel + #684, #1024
+  static nextlevel + #685, #1024
+  static nextlevel + #686, #1024
+  static nextlevel + #687, #3072
+  static nextlevel + #688, #3072
+  static nextlevel + #689, #3072
+  static nextlevel + #690, #3072
+  static nextlevel + #691, #2304
+  static nextlevel + #692, #2304
+  static nextlevel + #693, #1024
+  static nextlevel + #694, #1024
+  static nextlevel + #695, #1024
+  static nextlevel + #696, #1024
+  static nextlevel + #697, #3072
+  static nextlevel + #698, #3072
+  static nextlevel + #699, #3072
+  static nextlevel + #700, #3072
+  static nextlevel + #701, #1024
+  static nextlevel + #702, #1024
+  static nextlevel + #703, #1024
+  static nextlevel + #704, #1024
+  static nextlevel + #705, #1024
+  static nextlevel + #706, #1024
+  static nextlevel + #707, #3072
+  static nextlevel + #708, #3072
+  static nextlevel + #709, #3072
+  static nextlevel + #710, #2304
+  static nextlevel + #711, #2304
+  static nextlevel + #712, #1024
+  static nextlevel + #713, #1024
+  static nextlevel + #714, #1024
+  static nextlevel + #715, #1024
+  static nextlevel + #716, #2304
+  static nextlevel + #717, #3072
+  static nextlevel + #718, #3072
+  static nextlevel + #719, #3072
+
+  ;Linha 18
+  static nextlevel + #720, #3072
+  static nextlevel + #721, #3072
+  static nextlevel + #722, #3072
+  static nextlevel + #723, #3072
+  static nextlevel + #724, #3072
+  static nextlevel + #725, #3072
+  static nextlevel + #726, #3072
+  static nextlevel + #727, #3072
+  static nextlevel + #728, #3072
+  static nextlevel + #729, #3072
+  static nextlevel + #730, #3072
+  static nextlevel + #731, #2304
+  static nextlevel + #732, #2304
+  static nextlevel + #733, #3072
+  static nextlevel + #734, #3072
+  static nextlevel + #735, #3072
+  static nextlevel + #736, #2304
+  static nextlevel + #737, #2304
+  static nextlevel + #738, #2304
+  static nextlevel + #739, #2304
+  static nextlevel + #740, #2304
+  static nextlevel + #741, #2304
+  static nextlevel + #742, #3072
+  static nextlevel + #743, #3072
+  static nextlevel + #744, #2304
+  static nextlevel + #745, #2304
+  static nextlevel + #746, #2304
+  static nextlevel + #747, #2304
+  static nextlevel + #748, #2304
+  static nextlevel + #749, #2304
+  static nextlevel + #750, #3072
+  static nextlevel + #751, #2304
+  static nextlevel + #752, #3072
+  static nextlevel + #753, #3072
+  static nextlevel + #754, #3072
+  static nextlevel + #755, #3072
+  static nextlevel + #756, #2304
+  static nextlevel + #757, #3072
+  static nextlevel + #758, #3072
+  static nextlevel + #759, #3072
+
+  ;Linha 19
+  static nextlevel + #760, #3072
+  static nextlevel + #761, #3072
+  static nextlevel + #762, #3072
+  static nextlevel + #763, #3072
+  static nextlevel + #764, #3072
+  static nextlevel + #765, #3072
+  static nextlevel + #766, #3072
+  static nextlevel + #767, #3072
+  static nextlevel + #768, #3072
+  static nextlevel + #769, #3072
+  static nextlevel + #770, #3072
+  static nextlevel + #771, #2304
+  static nextlevel + #772, #2304
+  static nextlevel + #773, #3072
+  static nextlevel + #774, #3072
+  static nextlevel + #775, #3072
+  static nextlevel + #776, #2304
+  static nextlevel + #777, #3072
+  static nextlevel + #778, #3072
+  static nextlevel + #779, #2304
+  static nextlevel + #780, #2304
+  static nextlevel + #781, #2304
+  static nextlevel + #782, #3072
+  static nextlevel + #783, #3072
+  static nextlevel + #784, #2304
+  static nextlevel + #785, #2304
+  static nextlevel + #786, #2304
+  static nextlevel + #787, #3072
+  static nextlevel + #788, #3072
+  static nextlevel + #789, #2304
+  static nextlevel + #790, #3072
+  static nextlevel + #791, #2304
+  static nextlevel + #792, #3072
+  static nextlevel + #793, #3072
+  static nextlevel + #794, #2304
+  static nextlevel + #795, #2304
+  static nextlevel + #796, #3072
+  static nextlevel + #797, #3072
+  static nextlevel + #798, #3072
+  static nextlevel + #799, #3072
+
+  ;Linha 20
+  static nextlevel + #800, #3072
+  static nextlevel + #801, #3072
+  static nextlevel + #802, #3072
+  static nextlevel + #803, #3072
+  static nextlevel + #804, #3072
+  static nextlevel + #805, #3072
+  static nextlevel + #806, #1024
+  static nextlevel + #807, #1024
+  static nextlevel + #808, #1024
+  static nextlevel + #809, #1024
+  static nextlevel + #810, #1024
+  static nextlevel + #811, #2304
+  static nextlevel + #812, #2304
+  static nextlevel + #813, #3072
+  static nextlevel + #814, #3072
+  static nextlevel + #815, #3072
+  static nextlevel + #816, #2304
+  static nextlevel + #817, #2304
+  static nextlevel + #818, #2304
+  static nextlevel + #819, #2304
+  static nextlevel + #820, #2304
+  static nextlevel + #821, #2304
+  static nextlevel + #822, #3072
+  static nextlevel + #823, #3072
+  static nextlevel + #824, #2304
+  static nextlevel + #825, #2304
+  static nextlevel + #826, #2304
+  static nextlevel + #827, #2304
+  static nextlevel + #828, #2304
+  static nextlevel + #829, #2304
+  static nextlevel + #830, #1024
+  static nextlevel + #831, #2304
+  static nextlevel + #832, #3072
+  static nextlevel + #833, #3072
+  static nextlevel + #834, #2304
+  static nextlevel + #835, #3072
+  static nextlevel + #836, #3072
+  static nextlevel + #837, #3072
+  static nextlevel + #838, #3072
+  static nextlevel + #839, #3072
+
+  ;Linha 21
+  static nextlevel + #840, #3072
+  static nextlevel + #841, #3072
+  static nextlevel + #842, #3072
+  static nextlevel + #843, #3072
+  static nextlevel + #844, #3072
+  static nextlevel + #845, #3072
+  static nextlevel + #846, #3072
+  static nextlevel + #847, #3072
+  static nextlevel + #848, #3072
+  static nextlevel + #849, #3072
+  static nextlevel + #850, #3072
+  static nextlevel + #851, #2304
+  static nextlevel + #852, #2304
+  static nextlevel + #853, #3072
+  static nextlevel + #854, #3072
+  static nextlevel + #855, #3072
+  static nextlevel + #856, #2304
+  static nextlevel + #857, #3072
+  static nextlevel + #858, #3072
+  static nextlevel + #859, #3072
+  static nextlevel + #860, #3072
+  static nextlevel + #861, #2304
+  static nextlevel + #862, #2304
+  static nextlevel + #863, #2304
+  static nextlevel + #864, #2304
+  static nextlevel + #865, #3072
+  static nextlevel + #866, #2304
+  static nextlevel + #867, #3072
+  static nextlevel + #868, #3072
+  static nextlevel + #869, #3072
+  static nextlevel + #870, #3072
+  static nextlevel + #871, #2304
+  static nextlevel + #872, #3072
+  static nextlevel + #873, #3072
+  static nextlevel + #874, #3072
+  static nextlevel + #875, #3072
+  static nextlevel + #876, #3072
+  static nextlevel + #877, #3072
+  static nextlevel + #878, #3072
+  static nextlevel + #879, #3072
+
+  ;Linha 22
+  static nextlevel + #880, #3072
+  static nextlevel + #881, #3072
+  static nextlevel + #882, #3072
+  static nextlevel + #883, #3072
+  static nextlevel + #884, #3072
+  static nextlevel + #885, #3072
+  static nextlevel + #886, #3072
+  static nextlevel + #887, #3072
+  static nextlevel + #888, #3072
+  static nextlevel + #889, #3072
+  static nextlevel + #890, #3072
+  static nextlevel + #891, #2304
+  static nextlevel + #892, #2304
+  static nextlevel + #893, #2304
+  static nextlevel + #894, #2304
+  static nextlevel + #895, #2304
+  static nextlevel + #896, #3072
+  static nextlevel + #897, #2304
+  static nextlevel + #898, #2304
+  static nextlevel + #899, #2304
+  static nextlevel + #900, #3072
+  static nextlevel + #901, #3072
+  static nextlevel + #902, #2304
+  static nextlevel + #903, #2304
+  static nextlevel + #904, #3072
+  static nextlevel + #905, #3072
+  static nextlevel + #906, #3072
+  static nextlevel + #907, #2304
+  static nextlevel + #908, #2304
+  static nextlevel + #909, #2304
+  static nextlevel + #910, #3072
+  static nextlevel + #911, #2304
+  static nextlevel + #912, #3072
+  static nextlevel + #913, #3072
+  static nextlevel + #914, #2304
+  static nextlevel + #915, #3072
+  static nextlevel + #916, #3072
+  static nextlevel + #917, #3072
+  static nextlevel + #918, #3072
+  static nextlevel + #919, #3072
+
+  ;Linha 23
+  static nextlevel + #920, #3072
+  static nextlevel + #921, #1024
+  static nextlevel + #922, #1024
+  static nextlevel + #923, #1024
+  static nextlevel + #924, #1024
+  static nextlevel + #925, #1024
+  static nextlevel + #926, #1024
+  static nextlevel + #927, #3072
+  static nextlevel + #928, #3072
+  static nextlevel + #929, #3072
+  static nextlevel + #930, #3072
+  static nextlevel + #931, #1024
+  static nextlevel + #932, #1024
+  static nextlevel + #933, #1024
+  static nextlevel + #934, #1024
+  static nextlevel + #935, #1024
+  static nextlevel + #936, #1024
+  static nextlevel + #937, #3072
+  static nextlevel + #938, #3072
+  static nextlevel + #939, #3072
+  static nextlevel + #940, #3072
+  static nextlevel + #941, #1024
+  static nextlevel + #942, #1024
+  static nextlevel + #943, #1024
+  static nextlevel + #944, #1024
+  static nextlevel + #945, #1024
+  static nextlevel + #946, #1024
+  static nextlevel + #947, #3072
+  static nextlevel + #948, #3072
+  static nextlevel + #949, #3072
+  static nextlevel + #950, #3072
+  static nextlevel + #951, #1024
+  static nextlevel + #952, #1024
+  static nextlevel + #953, #1024
+  static nextlevel + #954, #1024
+  static nextlevel + #955, #1024
+  static nextlevel + #956, #1024
+  static nextlevel + #957, #3072
+  static nextlevel + #958, #3072
+  static nextlevel + #959, #3072
+
+  ;Linha 24
+  static nextlevel + #960, #3072
+  static nextlevel + #961, #3072
+  static nextlevel + #962, #3072
+  static nextlevel + #963, #3072
+  static nextlevel + #964, #3072
+  static nextlevel + #965, #3072
+  static nextlevel + #966, #3072
+  static nextlevel + #967, #3072
+  static nextlevel + #968, #3072
+  static nextlevel + #969, #3072
+  static nextlevel + #970, #3072
+  static nextlevel + #971, #3072
+  static nextlevel + #972, #3072
+  static nextlevel + #973, #3072
+  static nextlevel + #974, #3072
+  static nextlevel + #975, #3072
+  static nextlevel + #976, #3072
+  static nextlevel + #977, #3072
+  static nextlevel + #978, #3072
+  static nextlevel + #979, #3072
+  static nextlevel + #980, #3072
+  static nextlevel + #981, #3072
+  static nextlevel + #982, #3072
+  static nextlevel + #983, #3072
+  static nextlevel + #984, #3072
+  static nextlevel + #985, #3072
+  static nextlevel + #986, #3072
+  static nextlevel + #987, #3072
+  static nextlevel + #988, #3072
+  static nextlevel + #989, #3072
+  static nextlevel + #990, #3072
+  static nextlevel + #991, #3072
+  static nextlevel + #992, #3072
+  static nextlevel + #993, #3072
+  static nextlevel + #994, #3072
+  static nextlevel + #995, #3072
+  static nextlevel + #996, #3072
+  static nextlevel + #997, #3072
+  static nextlevel + #998, #3072
+  static nextlevel + #999, #3072
+
+  ;Linha 25
+  static nextlevel + #1000, #3072
+  static nextlevel + #1001, #3072
+  static nextlevel + #1002, #3072
+  static nextlevel + #1003, #3072
+  static nextlevel + #1004, #3072
+  static nextlevel + #1005, #3072
+  static nextlevel + #1006, #3072
+  static nextlevel + #1007, #3072
+  static nextlevel + #1008, #3072
+  static nextlevel + #1009, #3072
+  static nextlevel + #1010, #3072
+  static nextlevel + #1011, #3072
+  static nextlevel + #1012, #3072
+  static nextlevel + #1013, #3072
+  static nextlevel + #1014, #3072
+  static nextlevel + #1015, #3072
+  static nextlevel + #1016, #3072
+  static nextlevel + #1017, #3072
+  static nextlevel + #1018, #3072
+  static nextlevel + #1019, #3072
+  static nextlevel + #1020, #3072
+  static nextlevel + #1021, #3072
+  static nextlevel + #1022, #3072
+  static nextlevel + #1023, #3072
+  static nextlevel + #1024, #3072
+  static nextlevel + #1025, #3072
+  static nextlevel + #1026, #3072
+  static nextlevel + #1027, #3072
+  static nextlevel + #1028, #3072
+  static nextlevel + #1029, #3072
+  static nextlevel + #1030, #3072
+  static nextlevel + #1031, #3072
+  static nextlevel + #1032, #3072
+  static nextlevel + #1033, #3072
+  static nextlevel + #1034, #3072
+  static nextlevel + #1035, #3072
+  static nextlevel + #1036, #3072
+  static nextlevel + #1037, #3072
+  static nextlevel + #1038, #3072
+  static nextlevel + #1039, #3072
+
+  ;Linha 26
+  static nextlevel + #1040, #3072
+  static nextlevel + #1041, #3072
+  static nextlevel + #1042, #3072
+  static nextlevel + #1043, #3072
+  static nextlevel + #1044, #3072
+  static nextlevel + #1045, #3072
+  static nextlevel + #1046, #1024
+  static nextlevel + #1047, #1024
+  static nextlevel + #1048, #1024
+  static nextlevel + #1049, #1024
+  static nextlevel + #1050, #1024
+  static nextlevel + #1051, #1024
+  static nextlevel + #1052, #3072
+  static nextlevel + #1053, #3072
+  static nextlevel + #1054, #3072
+  static nextlevel + #1055, #3072
+  static nextlevel + #1056, #1024
+  static nextlevel + #1057, #1024
+  static nextlevel + #1058, #1024
+  static nextlevel + #1059, #1024
+  static nextlevel + #1060, #1024
+  static nextlevel + #1061, #1024
+  static nextlevel + #1062, #3072
+  static nextlevel + #1063, #3072
+  static nextlevel + #1064, #3072
+  static nextlevel + #1065, #3072
+  static nextlevel + #1066, #1024
+  static nextlevel + #1067, #1024
+  static nextlevel + #1068, #1024
+  static nextlevel + #1069, #1024
+  static nextlevel + #1070, #1024
+  static nextlevel + #1071, #1024
+  static nextlevel + #1072, #3072
+  static nextlevel + #1073, #3072
+  static nextlevel + #1074, #3072
+  static nextlevel + #1075, #3072
+  static nextlevel + #1076, #3072
+  static nextlevel + #1077, #3072
+  static nextlevel + #1078, #3072
+  static nextlevel + #1079, #3072
+
+  ;Linha 27
+  static nextlevel + #1080, #3072
+  static nextlevel + #1081, #3072
+  static nextlevel + #1082, #3072
+  static nextlevel + #1083, #3072
+  static nextlevel + #1084, #3072
+  static nextlevel + #1085, #3072
+  static nextlevel + #1086, #3072
+  static nextlevel + #1087, #3072
+  static nextlevel + #1088, #3072
+  static nextlevel + #1089, #3072
+  static nextlevel + #1090, #3072
+  static nextlevel + #1091, #3072
+  static nextlevel + #1092, #3072
+  static nextlevel + #1093, #3072
+  static nextlevel + #1094, #3072
+  static nextlevel + #1095, #3072
+  static nextlevel + #1096, #3072
+  static nextlevel + #1097, #3072
+  static nextlevel + #1098, #3072
+  static nextlevel + #1099, #3072
+  static nextlevel + #1100, #3072
+  static nextlevel + #1101, #3072
+  static nextlevel + #1102, #3072
+  static nextlevel + #1103, #3072
+  static nextlevel + #1104, #3072
+  static nextlevel + #1105, #3072
+  static nextlevel + #1106, #3072
+  static nextlevel + #1107, #3072
+  static nextlevel + #1108, #3072
+  static nextlevel + #1109, #3072
+  static nextlevel + #1110, #3072
+  static nextlevel + #1111, #3072
+  static nextlevel + #1112, #3072
+  static nextlevel + #1113, #3072
+  static nextlevel + #1114, #3072
+  static nextlevel + #1115, #3072
+  static nextlevel + #1116, #3072
+  static nextlevel + #1117, #3072
+  static nextlevel + #1118, #3072
+  static nextlevel + #1119, #3072
+
+  ;Linha 28
+  static nextlevel + #1120, #3072
+  static nextlevel + #1121, #3072
+  static nextlevel + #1122, #3072
+  static nextlevel + #1123, #3072
+  static nextlevel + #1124, #3072
+  static nextlevel + #1125, #3072
+  static nextlevel + #1126, #3072
+  static nextlevel + #1127, #3072
+  static nextlevel + #1128, #3072
+  static nextlevel + #1129, #3072
+  static nextlevel + #1130, #3072
+  static nextlevel + #1131, #3072
+  static nextlevel + #1132, #3072
+  static nextlevel + #1133, #3072
+  static nextlevel + #1134, #3072
+  static nextlevel + #1135, #3072
+  static nextlevel + #1136, #3072
+  static nextlevel + #1137, #3072
+  static nextlevel + #1138, #3072
+  static nextlevel + #1139, #3072
+  static nextlevel + #1140, #3072
+  static nextlevel + #1141, #3072
+  static nextlevel + #1142, #3072
+  static nextlevel + #1143, #3072
+  static nextlevel + #1144, #3072
+  static nextlevel + #1145, #3072
+  static nextlevel + #1146, #3072
+  static nextlevel + #1147, #3072
+  static nextlevel + #1148, #3072
+  static nextlevel + #1149, #3072
+  static nextlevel + #1150, #3072
+  static nextlevel + #1151, #3072
+  static nextlevel + #1152, #3072
+  static nextlevel + #1153, #3072
+  static nextlevel + #1154, #3072
+  static nextlevel + #1155, #3072
+  static nextlevel + #1156, #3072
+  static nextlevel + #1157, #3072
+  static nextlevel + #1158, #3072
+  static nextlevel + #1159, #3072
+
+  ;Linha 29
+  static nextlevel + #1160, #3072
+  static nextlevel + #1161, #3072
+  static nextlevel + #1162, #3072
+  static nextlevel + #1163, #3072
+  static nextlevel + #1164, #3072
+  static nextlevel + #1165, #3072
+  static nextlevel + #1166, #3072
+  static nextlevel + #1167, #3072
+  static nextlevel + #1168, #3072
+  static nextlevel + #1169, #3072
+  static nextlevel + #1170, #3072
+  static nextlevel + #1171, #3072
+  static nextlevel + #1172, #3072
+  static nextlevel + #1173, #3072
+  static nextlevel + #1174, #3072
+  static nextlevel + #1175, #3072
+  static nextlevel + #1176, #3072
+  static nextlevel + #1177, #3072
+  static nextlevel + #1178, #3072
+  static nextlevel + #1179, #3072
+  static nextlevel + #1180, #3072
+  static nextlevel + #1181, #3072
+  static nextlevel + #1182, #3072
+  static nextlevel + #1183, #3072
+  static nextlevel + #1184, #3072
+  static nextlevel + #1185, #3072
+  static nextlevel + #1186, #3072
+  static nextlevel + #1187, #3072
+  static nextlevel + #1188, #3072
+  static nextlevel + #1189, #3072
+  static nextlevel + #1190, #3072
+  static nextlevel + #1191, #3072
+  static nextlevel + #1192, #3072
+  static nextlevel + #1193, #3072
+  static nextlevel + #1194, #3072
+  static nextlevel + #1195, #3072
+  static nextlevel + #1196, #3072
+  static nextlevel + #1197, #3072
+  static nextlevel + #1198, #3072
+  static nextlevel + #1199, #3072
