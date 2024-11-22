@@ -1,18 +1,12 @@
-call printMenu
-
-menuInGame:
-  
-  inchar R0
-  loadn R1, #32 ; space 
-  cmp R0, R1
-  jeq startLevel  
-
-  jmp menuInGame ; will loop until player hits space
+startGame:
+  call printMenu
+  call menuSpaceLoop
 
 startLevel:
   call levelMain ; loads current level
 
   call render
+  breakp
   call renderPlayer
 
 inGame:
@@ -46,13 +40,25 @@ levelMain:
     jne testLevel3
     call loadLevel2
 
+    jmp levelMainFinish
+
   testLevel3:
+    loadn R1, #3
+    cmp R0, R1
+    jne levelMainFinish
+    call loadLevel3
 
   levelMainFinish:
     pop R1
     pop R0
     rts
 
+menuSpaceLoop:
+  inchar R0
+  loadn R1, #32 ; space 
+  cmp R0, R1
+  jne menuSpaceLoop
+  rts
 
 loadLevel1:
   push R0
@@ -161,11 +167,11 @@ loadLevel2:
 
   ; player things
   loadn R0, #playerCoordRender
-  loadn R1, #950
-  storei R0, R1 ; stores coord 750 in player render
+  loadn R1, #43
+  storei R0, R1 ; stores coord 43 in player render
 
   inc R0
-  storei R0, R1 ; stores coord 750 in player map
+  storei R0, R1 ; stores coord 43 in player map
 
   ; render things
   loadn R0, #renderVar
@@ -184,24 +190,18 @@ loadLevel2:
   loadn R1, #65000
   storei R0, R1
 
+  ; baby bee spawn
+  loadn R1, #0
+  store babyBee, R1
+
   ; mob things
   loadn R0, #mob1
-  loadn R1, #1
-  storei R0, R1 ; activates mob1
+  call loadMobRoutine
 
   loadn R1, #6
   add R1, R1, R0 ; addr to mapCoord of mob
-  loadn R2, #841
-  storei R1, R2 ; coord now 841
-
-  inc R1 ; addr to chase bool
-  loadn R2, #0
-  storei R1, R2 ; restarts chase bool
-  inc R1
-  storei R1, R2 ; restarts alert bool
-  loadn R1, #17
-  add R1, R1, R0 ; addr to return bool
-  storei R1, R2 ; restarts return bool
+  loadn R2, #1085
+  storei R1, R2 ; coord now 1085
 
   loadn R1, #9
   add R1, R1, R0 ; addr to side mob is facing
@@ -210,8 +210,46 @@ loadLevel2:
 
   loadn R1, #12
   add R1, R1, R0 ; addr to script number
-  loadn R2, #script1
+  loadn R2, #script4
   storei R1, R2 ; stores script 1
+
+  ; second mob
+  loadn R0, #mob2
+  call loadMobRoutine
+
+  loadn R1, #6
+  add R1, R1, R0 ; addr to mapCoord of mob
+  loadn R2, #1629
+  storei R1, R2 ; coord now 1629
+
+  loadn R1, #9
+  add R1, R1, R0 ; addr to side mob is facing
+  loadn R2, #1
+  storei R1, R2 ; stores 1 (facing right)
+
+  loadn R1, #12
+  add R1, R1, R0 ; addr to script number
+  loadn R2, #script5
+  storei R1, R2 ; stores script 2
+
+  ; third mob
+  loadn R0, #mob3
+  call loadMobRoutine
+
+  loadn R1, #6
+  add R1, R1, R0 ; addr to mapCoord of mob
+  loadn R2, #875
+  storei R1, R2 ; coord now 875
+
+  loadn R1, #9
+  add R1, R1, R0 ; addr to side mob is facing
+  loadn R2, #1
+  storei R1, R2 ; stores 1 (facing right)
+
+  loadn R1, #12
+  add R1, R1, R0 ; addr to script number
+  loadn R2, #script6
+  storei R1, R2 ; stores script 3
 
   ; slides map from bottom to top
   ;call levelSlide
@@ -220,6 +258,125 @@ loadLevel2:
   pop R1
   pop R0
   rts
+
+loadLevel3:
+  push R0
+  push R1
+  push R2
+
+  ; player things
+  loadn R0, #playerCoordRender
+  loadn R1, #43
+  storei R0, R1 ; stores coord 43 in player render
+
+  inc R0
+  storei R0, R1 ; stores coord 43 in player map
+
+  ; render things
+  loadn R0, #renderVar
+  loadn R1, #0   ;#480
+  storei R0, R1 ; stores render min cord as 480
+
+  inc R0
+  loadn R1, #1200   ;#1680
+  storei R0, R1 ; stores max coord as 1680
+
+  ; restars slideCounter
+  loadn R0, #slideCounter
+  loadn R1, #20000
+  storei R0, R1
+  inc R0
+  loadn R1, #65000
+  storei R0, R1
+
+  ; baby bee spawn
+  loadn R1, #0
+  store babyBee, R1
+
+  ; mob things
+  loadn R0, #mob1
+  ;call loadMobRoutine
+
+  loadn R1, #6
+  add R1, R1, R0 ; addr to mapCoord of mob
+  loadn R2, #1143
+  storei R1, R2 ; coord now 1143
+
+  loadn R1, #9
+  add R1, R1, R0 ; addr to side mob is facing
+  loadn R2, #1
+  storei R1, R2 ; stores 1 (facing right)
+
+  loadn R1, #12
+  add R1, R1, R0 ; addr to script number
+  loadn R2, #script3
+  storei R1, R2 ; stores script 3
+
+  ; second mob
+  loadn R0, #mob2
+  call loadMobRoutine
+
+  loadn R1, #6
+  add R1, R1, R0 ; addr to mapCoord of mob
+  loadn R2, #875
+  storei R1, R2 ; coord now 1629
+
+  loadn R1, #9
+  add R1, R1, R0 ; addr to side mob is facing
+  loadn R2, #1
+  storei R1, R2 ; stores 1 (facing right)
+
+  loadn R1, #12
+  add R1, R1, R0 ; addr to script number
+  loadn R2, #script6
+  storei R1, R2 ; stores script 2
+
+  ; third mob
+  loadn R0, #mob3
+  call loadMobRoutine
+
+  loadn R1, #6
+  add R1, R1, R0 ; addr to mapCoord of mob
+  loadn R2, #1155
+  storei R1, R2 ; coord now 875
+
+  loadn R1, #9
+  add R1, R1, R0 ; addr to side mob is facing
+  loadn R2, #1
+  storei R1, R2 ; stores 1 (facing right)
+
+  loadn R1, #12
+  add R1, R1, R0 ; addr to script number
+  loadn R2, #script7
+  storei R1, R2 ; stores script 3
+
+  ; fourth mob
+  loadn R0, #mob4
+  call loadMobRoutine
+
+  loadn R1, #6
+  add R1, R1, R0 ; addr to mapCoord of mob
+  loadn R2, #1624
+  storei R1, R2 ; coord now 875
+
+  loadn R1, #9
+  add R1, R1, R0 ; addr to side mob is facing
+  loadn R2, #1
+  storei R1, R2 ; stores 1 (facing right)
+
+  loadn R1, #12
+  add R1, R1, R0 ; addr to script number
+  loadn R2, #script8
+  storei R1, R2 ; stores script 3
+
+  ; slides map from bottom to top
+  ;call levelSlide
+
+  pop R2
+  pop R1
+  pop R0
+  rts
+
 
 ; R0 must have mob addr
 loadMobRoutine:
@@ -303,6 +460,11 @@ finishLevel:
   inc R1
   store curLevel, R1 ; increases level
 
+  ; checks if new level is 4 (end game)
+  loadn R2, #4
+  cmp R1, R2
+  ceq endGameLevel ; everything will restart
+
   ; prints next level screen
   call printnextlevelScreen
 
@@ -321,6 +483,34 @@ finishLevelFinish:
   pop R1
   pop R0
   rts
+
+endGameLevel:
+  loadn R0, #endGame
+  loadn R1, #0
+  loadn R2, #1200
+
+  printendGameScreenLoop:
+    add R3,R0,R1
+    loadi R3, R3
+    outchar R3, R1
+    inc R1
+    cmp R1, R2
+
+    jne printendGameScreenLoop
+  
+  endGameLoop:
+    inchar R0
+    loadn R1, #32 ; space
+    cmp R1, R0
+
+    jne endGameLoop
+
+    loadn R1, #1
+    store curLevel, R1
+
+  breakp
+    loadn R0, #0
+    jmp startGame
 
 
 renderBaby:
@@ -506,6 +696,17 @@ mobMain:
     jne mobMainFinish
 
     loadn R0, #mob3 ; will be used for various instructions, 
+                    ; should not be changed inside of them
+    call mobMovement
+    call behaveMob
+    call renderExclaInter
+  
+  checkActiveMob4:
+    load R1, mob4
+    cmp R1, R2 ; checks if mob is active
+    jne mobMainFinish
+
+    loadn R0, #mob4 ; will be used for various instructions, 
                     ; should not be changed inside of them
     call mobMovement
     call behaveMob
@@ -893,82 +1094,6 @@ mobMovement:
     pop R2
     pop R1
     rts
-
-
-debugScriptAlert:
-  push R1
-  push R2
-  push R3
-  push R4
-  push R5
-  push R6
-  push R7
-
-  ; script alert
-  loadn R1, #6
-  add R1, R1, R0
-  loadi R1, R1 ; coord
-  loadn R2, #16
-  add R2, R2, R0
-  loadi R7, R2
-  loadi R2, R7 ; first var 
-  inc R7
-  loadi R3, R7 ; second var
-  inc R7
-  loadi R4, R7 ; third var
-  inc R7
-  loadi R5, R7 ; fourth var
-  inc R7
-  loadi R6, R7 ; fifth var
-  inc R7
-  loadi R7, R7 ; sixth var
-
-  ; std script
-  loadn R7, #script1
-  loadi R2, R7 ; first var 
-  inc R7
-  loadi R3, R7 ; second var
-  inc R7
-  loadi R4, R7 ; third var
-  inc R7
-  loadi R5, R7 ; fourth var
-  inc R7
-  loadi R6, R7 ; fifth var
-  inc R7
-  loadi R7, R7 ; sixth var
-   ;breakp
-
-  ; return script
-  loadn R7, #18
-  add R7, R7, R0
-  loadi R7, R7
-
-  loadi R2, R7 ; first var 
-  inc R7
-  loadi R3, R7 ; second var
-  inc R7
-  loadi R4, R7 ; third var
-  inc R7
-  loadi R5, R7 ; fourth var
-  inc R7
-  loadi R6, R7 ; fifth var
-  inc R7
-  loadi R7, R7 ; sixth var
-  
-  loadn R1, #17
-  add R1, R1, R0 
-  loadi R1, R1 ; return bool
-
-  ;breakp
-
-  pop R7
-  pop R6
-  pop R5
-  pop R4
-  pop R3
-  pop R2
-  pop R1
-  rts
 
 scriptAlert:
   push R1
@@ -1935,6 +2060,10 @@ scriptAction:
   cmp R4, R5 ; if == 0, phaseNum = 0
   jeq scriptActionLastPhase
 
+  inc R5
+  cmp R4, R5 ; if == 5, phaseNum = 0, side = 1
+  jeq scriptActionLastPhaseSideRight
+
   ; check if mob already in checkpoint, 
   ; mob might have 0 movement in scriptalert, so second coord will be
   ; equal to first, it will move and break the script
@@ -1959,6 +2088,44 @@ scriptAction:
 
   call renderMob
   jmp scriptActionFinish
+
+  ; store side right to mob
+  scriptActionLastPhaseSideRight:
+    loadn R4, #9
+    add R4, R4, R0 ; addr to side
+    loadn R5, #1
+    storei R4, R5
+
+    ; restore background
+    loadn R1, #6
+    add R1, R1, R0 ; addr to mob coord
+    loadi R1, R1 ; mob coord
+
+    ; reaching coord
+    loadn R2, #40
+    add R1, R1, R2 ; one coord below
+    dec R1 ; coord to restore
+    
+    ; checks if coord is on screen
+    loadn R5, #renderVar
+    loadi R4, R5
+    cmp R1, R4 ; has to be eq or gr
+              ; else, delay and finish
+    jle scriptActionLastPhase
+
+    inc R5
+    loadi R5, R5 ; max render var
+    cmp R1, R5 ; has to be le
+              ; else, delay and finish
+    jeg scriptActionLastPhase
+
+    ; let's restore the background now
+    loadn R2, #mapTotal
+    add R2, R2, R1 ; addr to pix info
+    loadi R2, R2 ; pix info
+
+    sub R1, R1, R4 ; coord in screen
+    outchar R2, R1
 
   ; R3 must be addr of script
   scriptActionLastPhase:
@@ -2169,11 +2336,116 @@ mobMoveChoice:
   cmp R1, R2 ; if true, move up
   ceq mobMoveUp
 
+  loadn R2, #'s'
+  cmp R1, R2 ; if true, change side and add to delaymove
+  ceq mobMoveSide
+
   mobMoveChoiceFinish:
     pop R6
     pop R2
     pop R1
     rts
+
+mobMoveSide:
+  push R1
+  push R2
+  push R3
+  push R4
+  push R5
+
+  loadn R1, #9
+  add R1, R1, R0 ; addr to side
+  loadi R2, R1 ; side mob is looking at
+
+  loadn R3, #0
+  cmp R2, R3 ; if equal, store 1
+             ; else, store 0
+  jne mobMoveSideStoreLeft
+
+  loadn R3, #1
+  storei R1, R3 ; stores right side
+
+  ; restore background
+  loadn R1, #6
+  add R1, R1, R0 ; addr to mob coord
+  loadi R1, R1 ; mob coord
+
+  ; reaching coord
+  loadn R2, #40
+  add R1, R1, R2 ; one coord below
+  dec R1 ; coord to restore
+  
+  ; checks if coord is on screen
+  loadn R5, #renderVar
+  loadi R4, R5
+  cmp R1, R4 ; has to be eq or gr
+             ; else, delay and finish
+  jle mobMoveSideDelay
+
+  inc R5
+  loadi R5, R5 ; max render var
+  cmp R1, R5 ; has to be le
+             ; else, delay and finish
+  jeg mobMoveSideDelay
+
+  ; let's restore the background now
+  loadn R2, #mapTotal
+  add R2, R2, R1 ; addr to pix info
+  loadi R2, R2 ; pix info
+
+  sub R1, R1, R4 ; coord in screen
+  outchar R2, R1
+
+  jmp mobMoveSideDelay
+
+  mobMoveSideStoreLeft:
+    storei R1, R3 ; stores left side
+
+    ; restore background
+    loadn R1, #6
+    add R1, R1, R0 ; addr to mob coord
+    loadi R1, R1 ; mob coord
+
+    ; reaching coord
+    loadn R2, #40
+    add R1, R1, R2 ; one doord below
+    inc R1 ; coord to restore
+    
+    ; checks if coord is on screen
+    loadn R5, #renderVar
+    loadi R4, R5
+    cmp R1, R4 ; has to be eq or gr
+              ; else, delay and finish
+    jle mobMoveSideDelay
+
+    inc R5
+    loadi R5, R5 ; max render var
+    cmp R1, R5 ; has to be le
+              ; else, delay and finish
+    jeg mobMoveSideDelay
+
+    ; let's restore the background now
+    loadn R2, #mapTotal
+    add R2, R2, R1 ; addr to pix info
+    loadi R2, R2 ; pix info
+
+    sub R1, R1, R4 ; coord in screen
+    outchar R2, R1
+  
+  mobMoveSideDelay:
+    loadn R1, #10
+    add R1, R1, R0 ; addr to delaymob move 1
+    loadn R2, #25
+    storei R1, R2 ; stores 25 to delaymob move, 25 times more
+  
+  mobMoveSideFinish:
+    pop R5
+    pop R4
+    pop R3
+    pop R2
+    pop R1
+    rts
+
 
 mobMoveUp:
   push R1
@@ -2752,6 +3024,12 @@ delayMobAlert:
     inc R1 ; addr to delayMobMove2
     storei R1, R2 ; resets it
 
+    ; activates return bool
+    loadn R1, #17
+    add R1, R1, R0 ; addr to return bool
+    loadn R2, #1
+    storei R1, R2 ; activates
+
     ; unrenders inter
     loadn R1, #6
     add R1, R1, R0 ; addr to mobCoord
@@ -2759,20 +3037,27 @@ delayMobAlert:
     loadn R2, #80
     sub R1, R1, R2 ; coord inMap of inter
 
+    ; tests if coord in screen
+    loadn R4, #renderVar
+    loadi R3, R4 ; min rendervar
+    cmp R1, R3 ; has to be eq or gr
+               ; else, finish
+    jle delayMobAlertFinish
+
+    inc R4
+    loadi R4, R4 ; max rendervar
+    cmp R1, R4 ; has to be le
+               ; else, finish
+    jeg delayMobAlertFinish
+
     ; getting pixel info on mapTotal
     loadn R2, #mapTotal
     add R2, R1, R2 ; addr of mapTotal pix
     loadi R2, R2 ; pix info
+    
     ; gets coordinRender
-    load R3, renderVar
     sub R1, R1, R3 ; coord in Render
     outchar R2, R1
-
-    ; activates return bool
-    loadn R1, #17
-    add R1, R1, R0 ; addr to return bool
-    loadn R2, #1
-    storei R1, R2 ; activates
 
     jmp delayMobAlertFinish
 
@@ -2811,26 +3096,23 @@ renderExclaInter:
   ; renders excla
   dec R1 ; addr to coordInMap
   loadi R1, R1
-  ; checks if mob not above 3rd line of render so excla/inter can be rendered
-  load R2, renderVar ; min var of render
-  sub R2, R1, R2 ; coord of mob in render
-  loadn R3, #79 ; last coord in 2nd line (1-indexed)
-                ; mob coord has to be greater than this
-  cmp R2, R3
-  jel renderExclaInterFinish
+  loadn R2, #80
+  sub R1, R1, R2 ; coord of symbol inmap
 
-  ; check if symbol coord below max render coord
+  ; check if coord on screen
   loadn R3, #renderVar
+  loadi R2, R3 ; min rendervar
+
+  cmp R1, R2 ; has to be eq or gr
+  jle renderExclaInterFinish
+
   inc R3
   loadi R3, R3 ; max rendervar
-  
-  loadn R4, #80 
-  sub R2, R2, R4 ; R2 is coord in render, now 2 up in y axis
-  cmp R2, R3 ; has to be lesser than R3
-             ; else, finish
+  cmp R1, R3 ; has to be le
   jeg renderExclaInterFinish
 
   ; actual rendering
+  sub R2, R1, R2 ; coord - min rendervar
   loadn R3, #3134 ; exclamation
   outchar R3, R2
   jmp renderExclaInterFinish
@@ -3023,6 +3305,18 @@ renderSymbolBackground:
     ; R1 = mobCoord in map, R2 = mobCoord in render
     ; R5 = excla/inter coord inMap
     renderExclaInterBackgroundBackground:
+      ; check if coord on screen
+      loadn R4, #renderVar
+      loadi R3, R4 ; min render var
+      cmp R5, R3 ; must be eq or gr
+      jle renderSymbolBackgroundFinish
+
+      inc R4
+      loadi R4, R4 ; max rendervar
+      cmp R5, R4 ; must be le
+      jeg renderSymbolBackgroundFinish
+
+      ; actual rendering
       loadn R3, #mapTotal
       add R3, R3, R5 ; addr pixel info in map for background
       loadi R3, R3 ; info for pixel
@@ -4462,7 +4756,6 @@ skinPlayerFrontStop: var #4
 ; wings: 2062
 
 
-
 ; MOB INFOS
 mob1: var #19
   static mob1 + #0, #0 ; if it's active or not
@@ -4575,6 +4868,43 @@ scriptAlertMob3: var #6
   static scriptAlertMob3 + #4, #0 ; side to go 
   static scriptAlertMob3 + #5, #0 ; side to look at
 
+mob4: var #19
+  static mob4 + #0, #0 ; if it's active or not
+  static mob4 + #1, #2822 ; left face skin
+  static mob4 + #2, #2823 ; right face skin
+  static mob4 + #3, #2825 ; left leg skin
+  static mob4 + #4, #2824 ; right leg skin
+  static mob4 + #5, #2053 ; wings
+  static mob4 + #6, #0 ; mobCoordInMap; coord in render will be calculated
+  static mob4 + #7, #0 ; chase bool
+  static mob4 + #8, #0 ; alert bool
+  static mob4 + #9, #1 ; side that mob is looking at, 0 for left, 1 for right
+  static mob4 + #10, #1 ; delay mobMove1 
+  static mob4 + #11, #5000; delay mobMove2
+  static mob4 + #12, #0 ; pointer to script
+  static mob4 + #13, #15 ; alertTimer 1, changed from 75
+  static mob4 + #14, #65000 ; alertTimer 2 from max
+  static mob4 + #15, #0 ; last movememt, vertical or horizontal
+  static mob4 + #16, #scriptAlertMob4 ; pointer
+  static mob4 + #17, #0 ; return bool
+  static mob4 + #18, #scriptReturnMob4 ; pointer
+
+scriptReturnMob4: var #6
+  static scriptReturnMob4 + #0, #65535 ; phase number
+  static scriptReturnMob4 + #1, #0 ; coord to go
+  static scriptReturnMob4 + #2, #0 ; side to go
+  static scriptReturnMob4 + #3, #0 ; coord to go
+  static scriptReturnMob4 + #4, #0 ; side to go 
+  static scriptReturnMob4 + #5, #0 ; finish
+
+scriptAlertMob4: var #6
+  static scriptAlertMob4 + #0, #65535 ; phase number
+  static scriptAlertMob4 + #1, #0 ; coord to go
+  static scriptAlertMob4 + #2, #0 ; side to go
+  static scriptAlertMob4 + #3, #0 ; coord to go
+  static scriptAlertMob4 + #4, #0 ; side to go 
+  static scriptAlertMob4 + #5, #0 ; side to look at
+
 ; starts at 841
 script1: var #8
   static script1 + #0, #0 ; phase number
@@ -4628,12 +4958,60 @@ script3: var #24
   static script3 + #22, #'d' ; down
   static script3 + #23, #0
 
+; starts at 1084
+script4: var #12
+  static script4 + #0, #0 ; phase number
+  static script4 + #1, #1085
+  static script4 + #2, #'u'
+  static script4 + #3, #1097
+  static script4 + #4, #'r' ; right
+  static script4 + #5, #1377
+  static script4 + #6, #'d' ; down
+  static script4 + #7, #1365
+  static script4 + #8, #'l' ; left
+  static script4 + #9, #1085
+  static script4 + #10, #'u' ; up
+  static script4 + #11, #0
+
+; coord 1629
+script5: var #6
+  static script5 + #0, #0
+  static script5 + #1, #1629
+  static script5 + #2, #0
+  static script5 + #3, #65535
+  static script5 + #4, #'s'
+  static script5 + #5, #0
+
+; starts at 875
+script6: var #4
+  static script6 + #0, #0 ; phase number
+  static script6 + #1, #875
+  static script6 + #2, #0
+  static script6 + #3, #1
+
+; starts at 1270
+script7: var #4
+  static script7 + #0, #0 ; phase number
+  static script7 + #1, #1155
+  static script7 + #2, #0
+  static script7 + #3, #1
+
+; starts at 1628
+script8: var #8
+  static script8 + #0, #0 ; phase number
+  static script8 + #1, #1624
+  static script8 + #2, #'l'
+  static script8 + #3, #1636
+  static script8 + #4, #'r' ; right
+  static script8 + #5, #1624
+  static script8 + #6, #'l' ; left
+  static script8 + #7, #0
 
 scriptAlertCurCoordSum: var #1
   static scriptAlertCurCoordSum + #0, #0 
 
 curLevel: var #1
-  static curLevel, #1
+  static curLevel, #3
 
 ; for slide of begginning of level
 slideCounter: var #2
@@ -10733,3 +11111,1264 @@ nextlevel : var #1200
   static nextlevel + #1197, #3072
   static nextlevel + #1198, #3072
   static nextlevel + #1199, #3072
+
+endGame : var #1200
+  ;Linha 0
+  static endGame + #0, #2816
+  static endGame + #1, #2816
+  static endGame + #2, #2816
+  static endGame + #3, #2816
+  static endGame + #4, #2816
+  static endGame + #5, #2816
+  static endGame + #6, #2816
+  static endGame + #7, #2816
+  static endGame + #8, #2816
+  static endGame + #9, #2816
+  static endGame + #10, #2816
+  static endGame + #11, #2816
+  static endGame + #12, #2816
+  static endGame + #13, #2816
+  static endGame + #14, #2816
+  static endGame + #15, #2816
+  static endGame + #16, #2816
+  static endGame + #17, #2816
+  static endGame + #18, #2816
+  static endGame + #19, #2816
+  static endGame + #20, #2816
+  static endGame + #21, #2816
+  static endGame + #22, #2816
+  static endGame + #23, #2816
+  static endGame + #24, #2816
+  static endGame + #25, #2816
+  static endGame + #26, #2816
+  static endGame + #27, #2816
+  static endGame + #28, #2816
+  static endGame + #29, #2816
+  static endGame + #30, #2816
+  static endGame + #31, #2816
+  static endGame + #32, #2816
+  static endGame + #33, #2816
+  static endGame + #34, #2816
+  static endGame + #35, #2816
+  static endGame + #36, #2816
+  static endGame + #37, #2816
+  static endGame + #38, #2816
+  static endGame + #39, #2816
+
+  ;Linha 1
+  static endGame + #40, #2816
+  static endGame + #41, #2816
+  static endGame + #42, #2816
+  static endGame + #43, #2816
+  static endGame + #44, #2816
+  static endGame + #45, #2816
+  static endGame + #46, #2816
+  static endGame + #47, #2816
+  static endGame + #48, #3072
+  static endGame + #49, #3072
+  static endGame + #50, #2816
+  static endGame + #51, #2816
+  static endGame + #52, #2816
+  static endGame + #53, #2816
+  static endGame + #54, #2816
+  static endGame + #55, #2816
+  static endGame + #56, #2816
+  static endGame + #57, #2816
+  static endGame + #58, #2816
+  static endGame + #59, #2816
+  static endGame + #60, #2816
+  static endGame + #61, #2816
+  static endGame + #62, #2816
+  static endGame + #63, #2816
+  static endGame + #64, #2816
+  static endGame + #65, #2816
+  static endGame + #66, #2816
+  static endGame + #67, #2816
+  static endGame + #68, #2816
+  static endGame + #69, #2816
+  static endGame + #70, #2816
+  static endGame + #71, #2816
+  static endGame + #72, #2816
+  static endGame + #73, #2816
+  static endGame + #74, #2816
+  static endGame + #75, #2816
+  static endGame + #76, #2816
+  static endGame + #77, #2816
+  static endGame + #78, #2816
+  static endGame + #79, #2816
+
+  ;Linha 2
+  static endGame + #80, #2816
+  static endGame + #81, #2816
+  static endGame + #82, #2816
+  static endGame + #83, #2816
+  static endGame + #84, #2816
+  static endGame + #85, #2816
+  static endGame + #86, #2816
+  static endGame + #87, #2816
+  static endGame + #88, #2816
+  static endGame + #89, #3072
+  static endGame + #90, #2816
+  static endGame + #91, #2816
+  static endGame + #92, #2816
+  static endGame + #93, #2816
+  static endGame + #94, #2816
+  static endGame + #95, #2816
+  static endGame + #96, #2816
+  static endGame + #97, #2816
+  static endGame + #98, #2816
+  static endGame + #99, #2816
+  static endGame + #100, #2816
+  static endGame + #101, #2816
+  static endGame + #102, #2816
+  static endGame + #103, #2816
+  static endGame + #104, #2816
+  static endGame + #105, #2816
+  static endGame + #106, #2816
+  static endGame + #107, #2816
+  static endGame + #108, #2816
+  static endGame + #109, #2816
+  static endGame + #110, #2816
+  static endGame + #111, #2816
+  static endGame + #112, #2816
+  static endGame + #113, #2816
+  static endGame + #114, #2816
+  static endGame + #115, #2816
+  static endGame + #116, #2816
+  static endGame + #117, #2816
+  static endGame + #118, #2816
+  static endGame + #119, #2816
+
+  ;Linha 3
+  static endGame + #120, #2816
+  static endGame + #121, #2816
+  static endGame + #122, #2816
+  static endGame + #123, #2816
+  static endGame + #124, #2304
+  static endGame + #125, #2304
+  static endGame + #126, #2304
+  static endGame + #127, #2304
+  static endGame + #128, #2816
+  static endGame + #129, #2816
+  static endGame + #130, #2816
+  static endGame + #131, #2816
+  static endGame + #132, #2816
+  static endGame + #133, #2816
+  static endGame + #134, #2816
+  static endGame + #135, #2816
+  static endGame + #136, #2816
+  static endGame + #137, #2816
+  static endGame + #138, #2816
+  static endGame + #139, #2816
+  static endGame + #140, #2816
+  static endGame + #141, #2816
+  static endGame + #142, #2816
+  static endGame + #143, #2816
+  static endGame + #144, #2816
+  static endGame + #145, #2816
+  static endGame + #146, #2816
+  static endGame + #147, #2816
+  static endGame + #148, #2816
+  static endGame + #149, #2816
+  static endGame + #150, #2816
+  static endGame + #151, #2816
+  static endGame + #152, #2816
+  static endGame + #153, #2816
+  static endGame + #154, #2816
+  static endGame + #155, #2816
+  static endGame + #156, #2816
+  static endGame + #157, #2816
+  static endGame + #158, #2816
+  static endGame + #159, #2816
+
+  ;Linha 4
+  static endGame + #160, #2816
+  static endGame + #161, #2816
+  static endGame + #162, #2816
+  static endGame + #163, #2816
+  static endGame + #164, #2304
+  static endGame + #165, #2304
+  static endGame + #166, #2304
+  static endGame + #167, #2304
+  static endGame + #168, #2816
+  static endGame + #169, #2816
+  static endGame + #170, #2816
+  static endGame + #171, #2816
+  static endGame + #172, #2816
+  static endGame + #173, #2816
+  static endGame + #174, #2816
+  static endGame + #175, #2816
+  static endGame + #176, #2816
+  static endGame + #177, #2816
+  static endGame + #178, #2816
+  static endGame + #179, #2816
+  static endGame + #180, #2816
+  static endGame + #181, #2816
+  static endGame + #182, #2816
+  static endGame + #183, #2816
+  static endGame + #184, #2816
+  static endGame + #185, #2816
+  static endGame + #186, #2816
+  static endGame + #187, #2816
+  static endGame + #188, #2816
+  static endGame + #189, #2816
+  static endGame + #190, #2816
+  static endGame + #191, #2816
+  static endGame + #192, #2816
+  static endGame + #193, #2816
+  static endGame + #194, #2816
+  static endGame + #195, #2816
+  static endGame + #196, #2816
+  static endGame + #197, #2816
+  static endGame + #198, #2816
+  static endGame + #199, #2816
+
+  ;Linha 5
+  static endGame + #200, #2816
+  static endGame + #201, #2816
+  static endGame + #202, #2816
+  static endGame + #203, #2816
+  static endGame + #204, #2304
+  static endGame + #205, #2304
+  static endGame + #206, #2304
+  static endGame + #207, #2304
+  static endGame + #208, #2816
+  static endGame + #209, #2816
+  static endGame + #210, #2816
+  static endGame + #211, #2816
+  static endGame + #212, #2816
+  static endGame + #213, #2816
+  static endGame + #214, #2816
+  static endGame + #215, #2816
+  static endGame + #216, #2816
+  static endGame + #217, #2816
+  static endGame + #218, #2816
+  static endGame + #219, #2816
+  static endGame + #220, #2816
+  static endGame + #221, #2816
+  static endGame + #222, #2816
+  static endGame + #223, #2816
+  static endGame + #224, #2816
+  static endGame + #225, #2816
+  static endGame + #226, #2816
+  static endGame + #227, #2816
+  static endGame + #228, #2816
+  static endGame + #229, #2816
+  static endGame + #230, #2816
+  static endGame + #231, #2816
+  static endGame + #232, #2816
+  static endGame + #233, #2816
+  static endGame + #234, #2816
+  static endGame + #235, #2816
+  static endGame + #236, #2816
+  static endGame + #237, #2816
+  static endGame + #238, #2816
+  static endGame + #239, #2816
+
+  ;Linha 6
+  static endGame + #240, #2816
+  static endGame + #241, #2816
+  static endGame + #242, #2816
+  static endGame + #243, #2816
+  static endGame + #244, #2304
+  static endGame + #245, #2304
+  static endGame + #246, #2304
+  static endGame + #247, #2304
+  static endGame + #248, #2816
+  static endGame + #249, #2816
+  static endGame + #250, #2816
+  static endGame + #251, #2816
+  static endGame + #252, #2816
+  static endGame + #253, #2816
+  static endGame + #254, #2816
+  static endGame + #255, #2816
+  static endGame + #256, #2816
+  static endGame + #257, #2816
+  static endGame + #258, #2816
+  static endGame + #259, #2816
+  static endGame + #260, #2816
+  static endGame + #261, #2816
+  static endGame + #262, #2816
+  static endGame + #263, #2816
+  static endGame + #264, #2816
+  static endGame + #265, #2816
+  static endGame + #266, #2816
+  static endGame + #267, #2816
+  static endGame + #268, #2816
+  static endGame + #269, #2816
+  static endGame + #270, #2816
+  static endGame + #271, #2816
+  static endGame + #272, #2816
+  static endGame + #273, #2816
+  static endGame + #274, #2816
+  static endGame + #275, #2816
+  static endGame + #276, #2816
+  static endGame + #277, #2816
+  static endGame + #278, #2816
+  static endGame + #279, #2816
+
+  ;Linha 7
+  static endGame + #280, #2816
+  static endGame + #281, #2816
+  static endGame + #282, #2816
+  static endGame + #283, #2816
+  static endGame + #284, #2816
+  static endGame + #285, #2816
+  static endGame + #286, #2816
+  static endGame + #287, #2816
+  static endGame + #288, #2816
+  static endGame + #289, #2816
+  static endGame + #290, #2816
+  static endGame + #291, #2816
+  static endGame + #292, #2816
+  static endGame + #293, #2816
+  static endGame + #294, #2816
+  static endGame + #295, #2816
+  static endGame + #296, #2816
+  static endGame + #297, #2816
+  static endGame + #298, #2816
+  static endGame + #299, #2816
+  static endGame + #300, #2816
+  static endGame + #301, #2816
+  static endGame + #302, #2816
+  static endGame + #303, #2816
+  static endGame + #304, #2816
+  static endGame + #305, #2816
+  static endGame + #306, #2816
+  static endGame + #307, #2816
+  static endGame + #308, #2816
+  static endGame + #309, #2816
+  static endGame + #310, #2816
+  static endGame + #311, #2816
+  static endGame + #312, #2816
+  static endGame + #313, #2816
+  static endGame + #314, #2816
+  static endGame + #315, #2816
+  static endGame + #316, #2816
+  static endGame + #317, #2816
+  static endGame + #318, #2816
+  static endGame + #319, #2816
+
+  ;Linha 8
+  static endGame + #320, #2816
+  static endGame + #321, #2816
+  static endGame + #322, #2816
+  static endGame + #323, #2816
+  static endGame + #324, #2816
+  static endGame + #325, #2816
+  static endGame + #326, #2816
+  static endGame + #327, #2816
+  static endGame + #328, #2816
+  static endGame + #329, #2816
+  static endGame + #330, #2816
+  static endGame + #331, #2816
+  static endGame + #332, #2816
+  static endGame + #333, #2816
+  static endGame + #334, #2816
+  static endGame + #335, #2816
+  static endGame + #336, #2816
+  static endGame + #337, #2816
+  static endGame + #338, #2816
+  static endGame + #339, #2816
+  static endGame + #340, #2816
+  static endGame + #341, #2816
+  static endGame + #342, #2816
+  static endGame + #343, #2816
+  static endGame + #344, #2816
+  static endGame + #345, #2816
+  static endGame + #346, #2816
+  static endGame + #347, #2816
+  static endGame + #348, #2816
+  static endGame + #349, #2816
+  static endGame + #350, #2816
+  static endGame + #351, #2816
+  static endGame + #352, #2816
+  static endGame + #353, #2816
+  static endGame + #354, #2816
+  static endGame + #355, #2816
+  static endGame + #356, #2816
+  static endGame + #357, #2816
+  static endGame + #358, #2816
+  static endGame + #359, #2816
+
+  ;Linha 9
+  static endGame + #360, #2816
+  static endGame + #361, #2816
+  static endGame + #362, #2816
+  static endGame + #363, #2816
+  static endGame + #364, #2816
+  static endGame + #365, #2816
+  static endGame + #366, #2816
+  static endGame + #367, #2816
+  static endGame + #368, #2816
+  static endGame + #369, #2816
+  static endGame + #370, #2816
+  static endGame + #371, #2816
+  static endGame + #372, #2816
+  static endGame + #373, #2816
+  static endGame + #374, #2816
+  static endGame + #375, #2816
+  static endGame + #376, #2816
+  static endGame + #377, #2816
+  static endGame + #378, #2816
+  static endGame + #379, #2816
+  static endGame + #380, #2816
+  static endGame + #381, #2816
+  static endGame + #382, #2816
+  static endGame + #383, #2816
+  static endGame + #384, #2816
+  static endGame + #385, #2816
+  static endGame + #386, #2816
+  static endGame + #387, #2816
+  static endGame + #388, #2816
+  static endGame + #389, #2816
+  static endGame + #390, #2816
+  static endGame + #391, #2816
+  static endGame + #392, #2816
+  static endGame + #393, #2816
+  static endGame + #394, #2816
+  static endGame + #395, #2816
+  static endGame + #396, #2816
+  static endGame + #397, #2816
+  static endGame + #398, #2816
+  static endGame + #399, #2816
+
+  ;Linha 10
+  static endGame + #400, #2816
+  static endGame + #401, #2816
+  static endGame + #402, #2816
+  static endGame + #403, #2816
+  static endGame + #404, #512
+  static endGame + #405, #512
+  static endGame + #406, #512
+  static endGame + #407, #512
+  static endGame + #408, #512
+  static endGame + #409, #512
+  static endGame + #410, #512
+  static endGame + #411, #512
+  static endGame + #412, #2816
+  static endGame + #413, #2816
+  static endGame + #414, #2816
+  static endGame + #415, #2816
+  static endGame + #416, #2816
+  static endGame + #417, #2816
+  static endGame + #418, #2816
+  static endGame + #419, #2816
+  static endGame + #420, #2816
+  static endGame + #421, #2816
+  static endGame + #422, #2816
+  static endGame + #423, #2816
+  static endGame + #424, #2816
+  static endGame + #425, #2816
+  static endGame + #426, #2816
+  static endGame + #427, #2816
+  static endGame + #428, #2816
+  static endGame + #429, #2816
+  static endGame + #430, #2816
+  static endGame + #431, #2816
+  static endGame + #432, #2816
+  static endGame + #433, #2816
+  static endGame + #434, #2816
+  static endGame + #435, #2816
+  static endGame + #436, #2816
+  static endGame + #437, #2816
+  static endGame + #438, #2816
+  static endGame + #439, #2816
+
+  ;Linha 11
+  static endGame + #440, #2816
+  static endGame + #441, #2816
+  static endGame + #442, #2816
+  static endGame + #443, #2816
+  static endGame + #444, #2816
+  static endGame + #445, #2816
+  static endGame + #446, #2816
+  static endGame + #447, #512
+  static endGame + #448, #512
+  static endGame + #449, #2816
+  static endGame + #450, #2816
+  static endGame + #451, #2816
+  static endGame + #452, #512
+  static endGame + #453, #2816
+  static endGame + #454, #2816
+  static endGame + #455, #2816
+  static endGame + #456, #512
+  static endGame + #457, #512
+  static endGame + #458, #2816
+  static endGame + #459, #2816
+  static endGame + #460, #2816
+  static endGame + #461, #2816
+  static endGame + #462, #2816
+  static endGame + #463, #2816
+  static endGame + #464, #2816
+  static endGame + #465, #2816
+  static endGame + #466, #2816
+  static endGame + #467, #2816
+  static endGame + #468, #2816
+  static endGame + #469, #2816
+  static endGame + #470, #2816
+  static endGame + #471, #2816
+  static endGame + #472, #2816
+  static endGame + #473, #2816
+  static endGame + #474, #2816
+  static endGame + #475, #2816
+  static endGame + #476, #2816
+  static endGame + #477, #2816
+  static endGame + #478, #2816
+  static endGame + #479, #2816
+
+  ;Linha 12
+  static endGame + #480, #2816
+  static endGame + #481, #2816
+  static endGame + #482, #2816
+  static endGame + #483, #2816
+  static endGame + #484, #2816
+  static endGame + #485, #2816
+  static endGame + #486, #2816
+  static endGame + #487, #512
+  static endGame + #488, #512
+  static endGame + #489, #2816
+  static endGame + #490, #2816
+  static endGame + #491, #2816
+  static endGame + #492, #512
+  static endGame + #493, #512
+  static endGame + #494, #2816
+  static endGame + #495, #512
+  static endGame + #496, #2816
+  static endGame + #497, #2816
+  static endGame + #498, #512
+  static endGame + #499, #2816
+  static endGame + #500, #2816
+  static endGame + #501, #2816
+  static endGame + #502, #2816
+  static endGame + #503, #2816
+  static endGame + #504, #2816
+  static endGame + #505, #2816
+  static endGame + #506, #2816
+  static endGame + #507, #2816
+  static endGame + #508, #2816
+  static endGame + #509, #2816
+  static endGame + #510, #2816
+  static endGame + #511, #2816
+  static endGame + #512, #2816
+  static endGame + #513, #2816
+  static endGame + #514, #2816
+  static endGame + #515, #2816
+  static endGame + #516, #2816
+  static endGame + #517, #2816
+  static endGame + #518, #2816
+  static endGame + #519, #2816
+
+  ;Linha 13
+  static endGame + #520, #2816
+  static endGame + #521, #2816
+  static endGame + #522, #2816
+  static endGame + #523, #2816
+  static endGame + #524, #2816
+  static endGame + #525, #2816
+  static endGame + #526, #2816
+  static endGame + #527, #512
+  static endGame + #528, #512
+  static endGame + #529, #2816
+  static endGame + #530, #2816
+  static endGame + #531, #2816
+  static endGame + #532, #512
+  static endGame + #533, #2816
+  static endGame + #534, #512
+  static endGame + #535, #512
+  static endGame + #536, #512
+  static endGame + #537, #512
+  static endGame + #538, #512
+  static endGame + #539, #2816
+  static endGame + #540, #2816
+  static endGame + #541, #2816
+  static endGame + #542, #2816
+  static endGame + #543, #2816
+  static endGame + #544, #2816
+  static endGame + #545, #2816
+  static endGame + #546, #2816
+  static endGame + #547, #2816
+  static endGame + #548, #2816
+  static endGame + #549, #2816
+  static endGame + #550, #2816
+  static endGame + #551, #2816
+  static endGame + #552, #2816
+  static endGame + #553, #2816
+  static endGame + #554, #2816
+  static endGame + #555, #2816
+  static endGame + #556, #2816
+  static endGame + #557, #2816
+  static endGame + #558, #2816
+  static endGame + #559, #2816
+
+  ;Linha 14
+  static endGame + #560, #2816
+  static endGame + #561, #2816
+  static endGame + #562, #2816
+  static endGame + #563, #2816
+  static endGame + #564, #2816
+  static endGame + #565, #2816
+  static endGame + #566, #2816
+  static endGame + #567, #512
+  static endGame + #568, #512
+  static endGame + #569, #2816
+  static endGame + #570, #2816
+  static endGame + #571, #2816
+  static endGame + #572, #512
+  static endGame + #573, #2816
+  static endGame + #574, #512
+  static endGame + #575, #512
+  static endGame + #576, #2816
+  static endGame + #577, #2816
+  static endGame + #578, #2816
+  static endGame + #579, #2816
+  static endGame + #580, #2816
+  static endGame + #581, #2816
+  static endGame + #582, #2816
+  static endGame + #583, #2816
+  static endGame + #584, #2816
+  static endGame + #585, #2816
+  static endGame + #586, #2816
+  static endGame + #587, #2816
+  static endGame + #588, #2816
+  static endGame + #589, #2816
+  static endGame + #590, #2816
+  static endGame + #591, #2816
+  static endGame + #592, #2816
+  static endGame + #593, #2816
+  static endGame + #594, #2816
+  static endGame + #595, #2816
+  static endGame + #596, #2816
+  static endGame + #597, #2816
+  static endGame + #598, #2816
+  static endGame + #599, #2816
+
+  ;Linha 15
+  static endGame + #600, #2816
+  static endGame + #601, #2816
+  static endGame + #602, #2816
+  static endGame + #603, #2816
+  static endGame + #604, #2816
+  static endGame + #605, #2816
+  static endGame + #606, #2816
+  static endGame + #607, #512
+  static endGame + #608, #512
+  static endGame + #609, #2816
+  static endGame + #610, #2816
+  static endGame + #611, #2816
+  static endGame + #612, #512
+  static endGame + #613, #2816
+  static endGame + #614, #512
+  static endGame + #615, #2816
+  static endGame + #616, #512
+  static endGame + #617, #512
+  static endGame + #618, #512
+  static endGame + #619, #512
+  static endGame + #620, #512
+  static endGame + #621, #512
+  static endGame + #622, #512
+  static endGame + #623, #2304
+  static endGame + #624, #2816
+  static endGame + #625, #2816
+  static endGame + #626, #2816
+  static endGame + #627, #2816
+  static endGame + #628, #2816
+  static endGame + #629, #2816
+  static endGame + #630, #2816
+  static endGame + #631, #2816
+  static endGame + #632, #2816
+  static endGame + #633, #2816
+  static endGame + #634, #2816
+  static endGame + #635, #2816
+  static endGame + #636, #2816
+  static endGame + #637, #2816
+  static endGame + #638, #2816
+  static endGame + #639, #2816
+
+  ;Linha 16
+  static endGame + #640, #2816
+  static endGame + #641, #2816
+  static endGame + #642, #2816
+  static endGame + #643, #2816
+  static endGame + #644, #2816
+  static endGame + #645, #2816
+  static endGame + #646, #2816
+  static endGame + #647, #2816
+  static endGame + #648, #2816
+  static endGame + #649, #2816
+  static endGame + #650, #2816
+  static endGame + #651, #2816
+  static endGame + #652, #2816
+  static endGame + #653, #2816
+  static endGame + #654, #2816
+  static endGame + #655, #2816
+  static endGame + #656, #2816
+  static endGame + #657, #2816
+  static endGame + #658, #2816
+  static endGame + #659, #2816
+  static endGame + #660, #2816
+  static endGame + #661, #2816
+  static endGame + #662, #2816
+  static endGame + #663, #2816
+  static endGame + #664, #2816
+  static endGame + #665, #2816
+  static endGame + #666, #2816
+  static endGame + #667, #2816
+  static endGame + #668, #2816
+  static endGame + #669, #2816
+  static endGame + #670, #2816
+  static endGame + #671, #2816
+  static endGame + #672, #2816
+  static endGame + #673, #2816
+  static endGame + #674, #2816
+  static endGame + #675, #2816
+  static endGame + #676, #2816
+  static endGame + #677, #2816
+  static endGame + #678, #2816
+  static endGame + #679, #2816
+
+  ;Linha 17
+  static endGame + #680, #2816
+  static endGame + #681, #2816
+  static endGame + #682, #2816
+  static endGame + #683, #2816
+  static endGame + #684, #2816
+  static endGame + #685, #2816
+  static endGame + #686, #2816
+  static endGame + #687, #2816
+  static endGame + #688, #2816
+  static endGame + #689, #2816
+  static endGame + #690, #2816
+  static endGame + #691, #2816
+  static endGame + #692, #2816
+  static endGame + #693, #2816
+  static endGame + #694, #2816
+  static endGame + #695, #512
+  static endGame + #696, #512
+  static endGame + #697, #512
+  static endGame + #698, #512
+  static endGame + #699, #512
+  static endGame + #700, #2816
+  static endGame + #701, #2816
+  static endGame + #702, #2816
+  static endGame + #703, #2816
+  static endGame + #704, #2816
+  static endGame + #705, #2816
+  static endGame + #706, #2816
+  static endGame + #707, #2816
+  static endGame + #708, #2816
+  static endGame + #709, #2816
+  static endGame + #710, #512
+  static endGame + #711, #2816
+  static endGame + #712, #2816
+  static endGame + #713, #2816
+  static endGame + #714, #2816
+  static endGame + #715, #2816
+  static endGame + #716, #2816
+  static endGame + #717, #2816
+  static endGame + #718, #2816
+  static endGame + #719, #2816
+
+  ;Linha 18
+  static endGame + #720, #2816
+  static endGame + #721, #2816
+  static endGame + #722, #2816
+  static endGame + #723, #2816
+  static endGame + #724, #2816
+  static endGame + #725, #2816
+  static endGame + #726, #2816
+  static endGame + #727, #2816
+  static endGame + #728, #2816
+  static endGame + #729, #2816
+  static endGame + #730, #2816
+  static endGame + #731, #2816
+  static endGame + #732, #2816
+  static endGame + #733, #2816
+  static endGame + #734, #2816
+  static endGame + #735, #512
+  static endGame + #736, #2816
+  static endGame + #737, #2816
+  static endGame + #738, #2816
+  static endGame + #739, #2816
+  static endGame + #740, #2816
+  static endGame + #741, #2816
+  static endGame + #742, #2816
+  static endGame + #743, #2816
+  static endGame + #744, #2816
+  static endGame + #745, #2816
+  static endGame + #746, #2816
+  static endGame + #747, #2816
+  static endGame + #748, #2816
+  static endGame + #749, #2816
+  static endGame + #750, #512
+  static endGame + #751, #2816
+  static endGame + #752, #2816
+  static endGame + #753, #2816
+  static endGame + #754, #2816
+  static endGame + #755, #2816
+  static endGame + #756, #2816
+  static endGame + #757, #2816
+  static endGame + #758, #2816
+  static endGame + #759, #2816
+
+  ;Linha 19
+  static endGame + #760, #2816
+  static endGame + #761, #2816
+  static endGame + #762, #2816
+  static endGame + #763, #2816
+  static endGame + #764, #2816
+  static endGame + #765, #2816
+  static endGame + #766, #2816
+  static endGame + #767, #2816
+  static endGame + #768, #2816
+  static endGame + #769, #2816
+  static endGame + #770, #2816
+  static endGame + #771, #2816
+  static endGame + #772, #2816
+  static endGame + #773, #2816
+  static endGame + #774, #2816
+  static endGame + #775, #512
+  static endGame + #776, #2816
+  static endGame + #777, #2816
+  static endGame + #778, #2816
+  static endGame + #779, #2816
+  static endGame + #780, #2816
+  static endGame + #781, #512
+  static endGame + #782, #512
+  static endGame + #783, #512
+  static endGame + #784, #512
+  static endGame + #785, #2816
+  static endGame + #786, #2816
+  static endGame + #787, #2816
+  static endGame + #788, #2816
+  static endGame + #789, #2816
+  static endGame + #790, #512
+  static endGame + #791, #2816
+  static endGame + #792, #2816
+  static endGame + #793, #2816
+  static endGame + #794, #2816
+  static endGame + #795, #2816
+  static endGame + #796, #2816
+  static endGame + #797, #2816
+  static endGame + #798, #2816
+  static endGame + #799, #2816
+
+  ;Linha 20
+  static endGame + #800, #2816
+  static endGame + #801, #2816
+  static endGame + #802, #2816
+  static endGame + #803, #2816
+  static endGame + #804, #2816
+  static endGame + #805, #2816
+  static endGame + #806, #2816
+  static endGame + #807, #2816
+  static endGame + #808, #2816
+  static endGame + #809, #2816
+  static endGame + #810, #2816
+  static endGame + #811, #2816
+  static endGame + #812, #2816
+  static endGame + #813, #2816
+  static endGame + #814, #2816
+  static endGame + #815, #512
+  static endGame + #816, #512
+  static endGame + #817, #512
+  static endGame + #818, #512
+  static endGame + #819, #512
+  static endGame + #820, #2816
+  static endGame + #821, #512
+  static endGame + #822, #2816
+  static endGame + #823, #2816
+  static endGame + #824, #512
+  static endGame + #825, #2816
+  static endGame + #826, #2816
+  static endGame + #827, #512
+  static endGame + #828, #512
+  static endGame + #829, #512
+  static endGame + #830, #512
+  static endGame + #831, #2816
+  static endGame + #832, #2816
+  static endGame + #833, #2816
+  static endGame + #834, #2816
+  static endGame + #835, #2816
+  static endGame + #836, #2816
+  static endGame + #837, #2816
+  static endGame + #838, #2816
+  static endGame + #839, #2816
+
+  ;Linha 21
+  static endGame + #840, #2816
+  static endGame + #841, #2816
+  static endGame + #842, #2816
+  static endGame + #843, #2816
+  static endGame + #844, #2816
+  static endGame + #845, #2816
+  static endGame + #846, #2816
+  static endGame + #847, #2816
+  static endGame + #848, #2816
+  static endGame + #849, #2816
+  static endGame + #850, #2816
+  static endGame + #851, #2816
+  static endGame + #852, #2816
+  static endGame + #853, #2816
+  static endGame + #854, #2816
+  static endGame + #855, #512
+  static endGame + #856, #2816
+  static endGame + #857, #2816
+  static endGame + #858, #2816
+  static endGame + #859, #2816
+  static endGame + #860, #512
+  static endGame + #861, #512
+  static endGame + #862, #2816
+  static endGame + #863, #2816
+  static endGame + #864, #512
+  static endGame + #865, #512
+  static endGame + #866, #2816
+  static endGame + #867, #512
+  static endGame + #868, #2816
+  static endGame + #869, #2816
+  static endGame + #870, #512
+  static endGame + #871, #2816
+  static endGame + #872, #2816
+  static endGame + #873, #2816
+  static endGame + #874, #2816
+  static endGame + #875, #2816
+  static endGame + #876, #2816
+  static endGame + #877, #2816
+  static endGame + #878, #2816
+  static endGame + #879, #2816
+
+  ;Linha 22
+  static endGame + #880, #2816
+  static endGame + #881, #2816
+  static endGame + #882, #2816
+  static endGame + #883, #2816
+  static endGame + #884, #2816
+  static endGame + #885, #2816
+  static endGame + #886, #2816
+  static endGame + #887, #2816
+  static endGame + #888, #2816
+  static endGame + #889, #2816
+  static endGame + #890, #2816
+  static endGame + #891, #2816
+  static endGame + #892, #2816
+  static endGame + #893, #2816
+  static endGame + #894, #2816
+  static endGame + #895, #512
+  static endGame + #896, #2816
+  static endGame + #897, #2816
+  static endGame + #898, #2816
+  static endGame + #899, #512
+  static endGame + #900, #512
+  static endGame + #901, #512
+  static endGame + #902, #2816
+  static endGame + #903, #2816
+  static endGame + #904, #512
+  static endGame + #905, #512
+  static endGame + #906, #2816
+  static endGame + #907, #512
+  static endGame + #908, #2816
+  static endGame + #909, #2816
+  static endGame + #910, #512
+  static endGame + #911, #2816
+  static endGame + #912, #2816
+  static endGame + #913, #2816
+  static endGame + #914, #2816
+  static endGame + #915, #2816
+  static endGame + #916, #2816
+  static endGame + #917, #2816
+  static endGame + #918, #2816
+  static endGame + #919, #2816
+
+  ;Linha 23
+  static endGame + #920, #2816
+  static endGame + #921, #2816
+  static endGame + #922, #2816
+  static endGame + #923, #2816
+  static endGame + #924, #2816
+  static endGame + #925, #2816
+  static endGame + #926, #2816
+  static endGame + #927, #2816
+  static endGame + #928, #2816
+  static endGame + #929, #2816
+  static endGame + #930, #2816
+  static endGame + #931, #2816
+  static endGame + #932, #2816
+  static endGame + #933, #2816
+  static endGame + #934, #2816
+  static endGame + #935, #512
+  static endGame + #936, #512
+  static endGame + #937, #512
+  static endGame + #938, #512
+  static endGame + #939, #512
+  static endGame + #940, #2816
+  static endGame + #941, #512
+  static endGame + #942, #2816
+  static endGame + #943, #2816
+  static endGame + #944, #512
+  static endGame + #945, #2816
+  static endGame + #946, #2816
+  static endGame + #947, #512
+  static endGame + #948, #512
+  static endGame + #949, #512
+  static endGame + #950, #512
+  static endGame + #951, #2816
+  static endGame + #952, #2816
+  static endGame + #953, #2816
+  static endGame + #954, #2816
+  static endGame + #955, #2816
+  static endGame + #956, #2816
+  static endGame + #957, #2816
+  static endGame + #958, #2816
+  static endGame + #959, #2816
+
+  ;Linha 24
+  static endGame + #960, #2816
+  static endGame + #961, #2816
+  static endGame + #962, #2816
+  static endGame + #963, #2816
+  static endGame + #964, #2816
+  static endGame + #965, #2816
+  static endGame + #966, #2816
+  static endGame + #967, #2816
+  static endGame + #968, #2816
+  static endGame + #969, #2816
+  static endGame + #970, #2816
+  static endGame + #971, #2816
+  static endGame + #972, #2816
+  static endGame + #973, #2816
+  static endGame + #974, #2816
+  static endGame + #975, #2816
+  static endGame + #976, #2816
+  static endGame + #977, #2816
+  static endGame + #978, #2816
+  static endGame + #979, #2816
+  static endGame + #980, #2816
+  static endGame + #981, #2816
+  static endGame + #982, #2816
+  static endGame + #983, #2816
+  static endGame + #984, #2816
+  static endGame + #985, #2816
+  static endGame + #986, #2816
+  static endGame + #987, #2816
+  static endGame + #988, #2816
+  static endGame + #989, #2816
+  static endGame + #990, #2816
+  static endGame + #991, #2816
+  static endGame + #992, #2816
+  static endGame + #993, #2816
+  static endGame + #994, #2816
+  static endGame + #995, #2816
+  static endGame + #996, #2816
+  static endGame + #997, #2816
+  static endGame + #998, #2816
+  static endGame + #999, #2816
+
+  ;Linha 25
+  static endGame + #1000, #2816
+  static endGame + #1001, #2816
+  static endGame + #1002, #2816
+  static endGame + #1003, #2816
+  static endGame + #1004, #2816
+  static endGame + #1005, #2816
+  static endGame + #1006, #2816
+  static endGame + #1007, #2816
+  static endGame + #1008, #2816
+  static endGame + #1009, #2816
+  static endGame + #1010, #2816
+  static endGame + #1011, #2816
+  static endGame + #1012, #2816
+  static endGame + #1013, #2816
+  static endGame + #1014, #2816
+  static endGame + #1015, #2816
+  static endGame + #1016, #2816
+  static endGame + #1017, #2816
+  static endGame + #1018, #2816
+  static endGame + #1019, #2816
+  static endGame + #1020, #2816
+  static endGame + #1021, #2816
+  static endGame + #1022, #2816
+  static endGame + #1023, #2816
+  static endGame + #1024, #2816
+  static endGame + #1025, #2816
+  static endGame + #1026, #2816
+  static endGame + #1027, #2816
+  static endGame + #1028, #2816
+  static endGame + #1029, #2816
+  static endGame + #1030, #2816
+  static endGame + #1031, #2816
+  static endGame + #1032, #2816
+  static endGame + #1033, #2816
+  static endGame + #1034, #2816
+  static endGame + #1035, #2816
+  static endGame + #1036, #2816
+  static endGame + #1037, #2816
+  static endGame + #1038, #2816
+  static endGame + #1039, #2816
+
+  ;Linha 26
+  static endGame + #1040, #2816
+  static endGame + #1041, #2816
+  static endGame + #1042, #2816
+  static endGame + #1043, #2816
+  static endGame + #1044, #2816
+  static endGame + #1045, #2816
+  static endGame + #1046, #2816
+  static endGame + #1047, #2816
+  static endGame + #1048, #2816
+  static endGame + #1049, #2816
+  static endGame + #1050, #2816
+  static endGame + #1051, #2816
+  static endGame + #1052, #2816
+  static endGame + #1053, #2816
+  static endGame + #1054, #2816
+  static endGame + #1055, #2816
+  static endGame + #1056, #2816
+  static endGame + #1057, #2816
+  static endGame + #1058, #2816
+  static endGame + #1059, #2816
+  static endGame + #1060, #2816
+  static endGame + #1061, #2816
+  static endGame + #1062, #2816
+  static endGame + #1063, #2816
+  static endGame + #1064, #2816
+  static endGame + #1065, #2816
+  static endGame + #1066, #2816
+  static endGame + #1067, #2816
+  static endGame + #1068, #2816
+  static endGame + #1069, #2816
+  static endGame + #1070, #2816
+  static endGame + #1071, #2816
+  static endGame + #1072, #2816
+  static endGame + #1073, #2816
+  static endGame + #1074, #2816
+  static endGame + #1075, #2816
+  static endGame + #1076, #2816
+  static endGame + #1077, #2816
+  static endGame + #1078, #2816
+  static endGame + #1079, #2816
+
+  ;Linha 27
+  static endGame + #1080, #2816
+  static endGame + #1081, #2816
+  static endGame + #1082, #2816
+  static endGame + #1083, #2816
+  static endGame + #1084, #2816
+  static endGame + #1085, #2816
+  static endGame + #1086, #2816
+  static endGame + #1087, #2816
+  static endGame + #1088, #2816
+  static endGame + #1089, #2816
+  static endGame + #1090, #2816
+  static endGame + #1091, #2816
+  static endGame + #1092, #2816
+  static endGame + #1093, #2816
+  static endGame + #1094, #2816
+  static endGame + #1095, #2816
+  static endGame + #1096, #2816
+  static endGame + #1097, #2816
+  static endGame + #1098, #2816
+  static endGame + #1099, #2816
+  static endGame + #1100, #2816
+  static endGame + #1101, #2816
+  static endGame + #1102, #2816
+  static endGame + #1103, #2816
+  static endGame + #1104, #2816
+  static endGame + #1105, #2816
+  static endGame + #1106, #2816
+  static endGame + #1107, #2816
+  static endGame + #1108, #2816
+  static endGame + #1109, #2816
+  static endGame + #1110, #2816
+  static endGame + #1111, #2816
+  static endGame + #1112, #2816
+  static endGame + #1113, #2816
+  static endGame + #1114, #2816
+  static endGame + #1115, #2816
+  static endGame + #1116, #2816
+  static endGame + #1117, #2816
+  static endGame + #1118, #2816
+  static endGame + #1119, #2816
+
+  ;Linha 28
+  static endGame + #1120, #2816
+  static endGame + #1121, #2816
+  static endGame + #1122, #2816
+  static endGame + #1123, #2816
+  static endGame + #1124, #2816
+  static endGame + #1125, #2816
+  static endGame + #1126, #2816
+  static endGame + #1127, #2816
+  static endGame + #1128, #2816
+  static endGame + #1129, #2816
+  static endGame + #1130, #2816
+  static endGame + #1131, #2816
+  static endGame + #1132, #2816
+  static endGame + #1133, #2816
+  static endGame + #1134, #2816
+  static endGame + #1135, #2816
+  static endGame + #1136, #2816
+  static endGame + #1137, #2816
+  static endGame + #1138, #2816
+  static endGame + #1139, #2816
+  static endGame + #1140, #2816
+  static endGame + #1141, #2816
+  static endGame + #1142, #2816
+  static endGame + #1143, #2816
+  static endGame + #1144, #2816
+  static endGame + #1145, #2816
+  static endGame + #1146, #2816
+  static endGame + #1147, #2816
+  static endGame + #1148, #2816
+  static endGame + #1149, #2816
+  static endGame + #1150, #2816
+  static endGame + #1151, #2816
+  static endGame + #1152, #2816
+  static endGame + #1153, #2816
+  static endGame + #1154, #2816
+  static endGame + #1155, #2816
+  static endGame + #1156, #2816
+  static endGame + #1157, #2816
+  static endGame + #1158, #2816
+  static endGame + #1159, #2816
+
+  ;Linha 29
+  static endGame + #1160, #2816
+  static endGame + #1161, #2816
+  static endGame + #1162, #2816
+  static endGame + #1163, #2816
+  static endGame + #1164, #2816
+  static endGame + #1165, #2816
+  static endGame + #1166, #2816
+  static endGame + #1167, #2816
+  static endGame + #1168, #2816
+  static endGame + #1169, #2816
+  static endGame + #1170, #2816
+  static endGame + #1171, #2816
+  static endGame + #1172, #2816
+  static endGame + #1173, #2816
+  static endGame + #1174, #2816
+  static endGame + #1175, #2816
+  static endGame + #1176, #2816
+  static endGame + #1177, #2816
+  static endGame + #1178, #2816
+  static endGame + #1179, #2816
+  static endGame + #1180, #2816
+  static endGame + #1181, #2816
+  static endGame + #1182, #2816
+  static endGame + #1183, #2816
+  static endGame + #1184, #2816
+  static endGame + #1185, #2816
+  static endGame + #1186, #2816
+  static endGame + #1187, #2816
+  static endGame + #1188, #2816
+  static endGame + #1189, #2816
+  static endGame + #1190, #2816
+  static endGame + #1191, #2816
+  static endGame + #1192, #2816
+  static endGame + #1193, #2816
+  static endGame + #1194, #2816
+  static endGame + #1195, #2816
+  static endGame + #1196, #2816
+  static endGame + #1197, #2816
+  static endGame + #1198, #2816
+  static endGame + #1199, #2816
