@@ -14,12 +14,10 @@ Carnivore is a retro-style game designed for the ICMC processor. Test your skill
 
 🛠️ How to Compile from Source Code
 
-    Install a recent version of Go (at least 1.13) from here.
+    Install a recent version of Go (at least 1.13)
     Install Git and a C compiler (on Windows, use MinGW).
     On Debian/Ubuntu-based systems, install libgl1-mesa-dev xorg-dev; on Fedora and Red Hat-based systems, install libX11-devel libXcursor-devel libXrandr-devel libXinerama-devel mesa-libGL-devel libXi-devel libXxf86vm-devel.
-    Clone the repository and navigate to the project directory.
-    Run go build . to compile and ./goICMCsim to start an empty processor. Use --help to see command line options.
-    Optionally, you can install directly into $GOPATH/bin with go install github.com/lucasgpulcinelli/goICMCsim@latest.
+    The simulator's repository is linked on tips, at the end of this README
 
 ---
 
