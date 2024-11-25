@@ -25,7 +25,7 @@ Carnivore is a retro-style game designed for the ICMC processor. Test your skill
 
 ## 🖼️ Processor Architecture
 
-![Processor Architecture](readme.md/architecture.png)
+![Processor Architecture](architecture.png)
 
 The image above illustrates the architecture of the ICMC processor, providing an overview of its components and design principles.
 
@@ -36,6 +36,15 @@ The image above illustrates the architecture of the ICMC processor, providing an
 1. Compile the **Carnivore** game assembly code.
 2. Load the compiled game into the simulator.
 3. Start playing!
+
+### 🕹️ Step-by-Step Tutorial
+
+1. Open the simulator (`simgo`).
+2. Navigate to the top left corner of the screen and click on **Files**.
+3. Select **Open Code MIF**, then choose `carnivore.mif` from the `src` folder.
+4. Go to **Files** again in the top left corner.
+5. Select **Open Char MIF**, then choose `charmap.mif` from the `src` folder.
+6. Start the simulation and enjoy the game!
 
 ---
 
