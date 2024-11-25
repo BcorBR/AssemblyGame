@@ -6,12 +6,13 @@ startLevel:
   call levelMain ; loads current level
 
   call render
-  breakp
   call renderPlayer
 
 inGame:
   call DelayMove
+  call checkCollision
   call mobMain
+  call checkCollision
   
   ; renders baby bee
   call renderBaby
@@ -53,12 +54,34 @@ levelMain:
     pop R0
     rts
 
+spaceLoop:
+  inchar R0
+  loadn R1, #32 ; space 
+  cmp R0, R1
+  jne spaceLoop
+  rts
+
 menuSpaceLoop:
   inchar R0
   loadn R1, #32 ; space 
   cmp R0, R1
-  jne menuSpaceLoop
-  rts
+  jeq menuSpaceLoopReturn ; starts game
+
+  loadn R1, #'i'
+  cmp R0, R1
+  ceq printinstructionScreen ; prints instruction screen
+  ceq instructionScreenCommandLoop ; will wait for space key to print menu again 
+                                   ; (goes back to addr 0)
+
+  jmp menuSpaceLoop
+
+  menuSpaceLoopReturn:
+    rts
+
+instructionScreenCommandLoop:
+  call spaceLoop
+  jmp startGame
+
 
 loadLevel1:
   push R0
@@ -75,16 +98,16 @@ loadLevel1:
 
   ; render things
   loadn R0, #renderVar
-  loadn R1, #0   ;#480
+  loadn R1, #480 ; #480
   storei R0, R1 ; stores render min cord as 480
 
   inc R0
-  loadn R1, #1200   ;#1680
+  loadn R1, #1680 ; #1680
   storei R0, R1 ; stores max coord as 1680
 
   ; restars slideCounter
   loadn R0, #slideCounter
-  loadn R1, #20000
+  loadn R1, #0
   storei R0, R1
   inc R0
   loadn R1, #65000
@@ -152,7 +175,7 @@ loadLevel1:
   storei R1, R2 ; stores script 3
 
   ; slides map from bottom to top
-  ;call levelSlide
+  call levelSlide
 
   pop R2
   pop R1
@@ -175,16 +198,16 @@ loadLevel2:
 
   ; render things
   loadn R0, #renderVar
-  loadn R1, #0   ;#480
+  loadn R1, #480   ;#480
   storei R0, R1 ; stores render min cord as 480
 
   inc R0
-  loadn R1, #1200   ;#1680
+  loadn R1, #1680   ;#1680
   storei R0, R1 ; stores max coord as 1680
 
   ; restars slideCounter
   loadn R0, #slideCounter
-  loadn R1, #20000
+  loadn R1, #0
   storei R0, R1
   inc R0
   loadn R1, #65000
@@ -252,7 +275,7 @@ loadLevel2:
   storei R1, R2 ; stores script 3
 
   ; slides map from bottom to top
-  ;call levelSlide
+  call levelSlide
 
   pop R2
   pop R1
@@ -274,16 +297,16 @@ loadLevel3:
 
   ; render things
   loadn R0, #renderVar
-  loadn R1, #0   ;#480
+  loadn R1, #480   ;#480
   storei R0, R1 ; stores render min cord as 480
 
   inc R0
-  loadn R1, #1200   ;#1680
+  loadn R1, #1680   ;#1680
   storei R0, R1 ; stores max coord as 1680
 
   ; restars slideCounter
   loadn R0, #slideCounter
-  loadn R1, #20000
+  loadn R1, #0
   storei R0, R1
   inc R0
   loadn R1, #65000
@@ -293,14 +316,14 @@ loadLevel3:
   loadn R1, #0
   store babyBee, R1
 
-  ; mob things
+  ; first mob
   loadn R0, #mob1
-  ;call loadMobRoutine
+  call loadMobRoutine
 
   loadn R1, #6
   add R1, R1, R0 ; addr to mapCoord of mob
-  loadn R2, #1143
-  storei R1, R2 ; coord now 1143
+  loadn R2, #1624
+  storei R1, R2 ; coord now 875
 
   loadn R1, #9
   add R1, R1, R0 ; addr to side mob is facing
@@ -309,7 +332,7 @@ loadLevel3:
 
   loadn R1, #12
   add R1, R1, R0 ; addr to script number
-  loadn R2, #script3
+  loadn R2, #script8
   storei R1, R2 ; stores script 3
 
   ; second mob
@@ -350,27 +373,9 @@ loadLevel3:
   loadn R2, #script7
   storei R1, R2 ; stores script 3
 
-  ; fourth mob
-  loadn R0, #mob4
-  call loadMobRoutine
-
-  loadn R1, #6
-  add R1, R1, R0 ; addr to mapCoord of mob
-  loadn R2, #1624
-  storei R1, R2 ; coord now 875
-
-  loadn R1, #9
-  add R1, R1, R0 ; addr to side mob is facing
-  loadn R2, #1
-  storei R1, R2 ; stores 1 (facing right)
-
-  loadn R1, #12
-  add R1, R1, R0 ; addr to script number
-  loadn R2, #script8
-  storei R1, R2 ; stores script 3
 
   ; slides map from bottom to top
-  ;call levelSlide
+  call levelSlide
 
   pop R2
   pop R1
@@ -386,7 +391,8 @@ loadMobRoutine:
   loadn R1, #1
   storei R0, R1 ; activates mob
 
-  loadn R1, #7 ; addr to chase bool
+  loadn R1, #7 
+  add R1, R1, R0 ; addr to chase bool
   loadn R2, #0
   storei R1, R2 ; restarts chase bool
   inc R1
@@ -398,7 +404,6 @@ loadMobRoutine:
   pop R2
   pop R1
   rts
-
 
 printMenu:
   push R0
@@ -508,7 +513,6 @@ endGameLevel:
     loadn R1, #1
     store curLevel, R1
 
-  breakp
     loadn R0, #0
     jmp startGame
 
@@ -557,7 +561,6 @@ renderBaby:
     rts
 
 
-
 ; will slide map from bottom to top
 levelSlide:
   push R0
@@ -566,67 +569,118 @@ levelSlide:
   push R3
   push R4
   push R5
+  push R6
+  push R7
 
-  ; checks delay
-  loadn R0, #slideCounter ; addr to first counter
-  mov R1, R0
-  inc R1 ; addr to second counter
+  call render
+  call renderBaby
+  
+  levelSlideDelayLoop:
+    call mobMain
 
-  loadi R2, R1 ; R2 = second counter value
-  loadn R5, #0
-  cmp R2, R5 ; if 0, test first counter, else, dec second counter
-  jeq levelSlideTestFirstCounter
-
-  dec R2
-  storei R1, R2
-  jmp levelSlideFinish
-
-  levelSlideTestFirstCounter:
-    loadi R3, R0 ; R3 = first counter value
-    cmp R3, R5 ; if 0, var = true, restore both counters
-               ; else, dec counter 1 and restore counter 2
-    jne levelSlideTestFirstNot0
-
-    ; if 0
-    loadn R4, #65000 ; stores to 2nd counter
-    storei R1, R4
-    loadn R4, #2000 ; stores to 1st counter
-    storei R0, R4
-    
-    jmp levelSlideStartLoop
-
-    levelSlideTestFirstNot0:
-      dec R3
-      storei R0, R3 ; decs first counter
-
-      loadn R4, #65000 ; stores to 2nd counter
-      storei R1, R4
-      jmp levelSlideFinish
-
-
-  levelSlideStartLoop:  
-    loadn R0, #renderVar
+    ; checks delay
+    loadn R0, #slideCounter ; addr to first counter
     mov R1, R0
-    inc R1 ; addr to max coord to be rendered
-    loadi R2, R0 ; min coord rendered
-    loadi R3, R1 ; max coord rendered
-    loadn R4, #40 ; 40 will be subed from coords
-    loadn R5, #0 ; to be used as case base
+    inc R1 ; addr to second counter
 
-    levelSlideLoop:
-      call render
-      call mobMain
+    loadi R2, R1 ; R2 = second counter value
+    loadn R5, #0
+    cmp R2, R5 ; if 0, test first counter, else, dec second counter
+    jeq levelSlideTestFirstCounter
 
-      sub R2, R2, R4
-      storei R0, R2 ; subs 40 to min coord to be rendered
+    dec R2
+    storei R1, R2
+    jmp levelSlideDelayLoop
 
-      sub R3, R3, R4 ; subs 40 to max coord to be rendered
-      storei R1, R3
+    levelSlideTestFirstCounter:
+      loadi R3, R0 ; R3 = first counter value
+      cmp R3, R5 ; if 0, var = true, restore both counters
+                ; else, dec counter 1 and restore counter 2
+      jne levelSlideTestFirstNot0
 
-      cmp R2, R5
-      jne levelSlideLoop
+      ; if 0
+      loadn R4, #17500 ; stores to 2nd counter
+      storei R1, R4
+      loadn R4, #0 ; stores to 1st counter
+      storei R0, R4
+      
+      jmp levelSlideStartLoopFirst
+
+      levelSlideTestFirstNot0:
+        dec R3
+        storei R0, R3 ; decs first counter
+
+        loadn R4, #65000 ; stores to 2nd counter
+        storei R1, R4
+        jmp levelSlideStartLoopFirst
+
+
+    levelSlideStartLoopFirst:  
+      loadn R0, #renderVar
+      mov R1, R0
+      inc R1 ; addr to max coord to be rendered
+      loadn R5, #0 ; to be used as case base
+
+      ; delays
+      levelSlideStartLoop:
+        call mobMain
+
+        loadn R6, #slideCounter ; addr to first counter
+        inc R6 ; addr to second counter
+        loadi R7, R6
+
+        dec R7
+        storei R6, R7 
+
+        cmp R5, R7 ; if equal, test first counter and restore second
+        jne levelSlideStartLoop
+
+        ; if second counter == 0, restore it
+        loadn R7, #17500
+        storei R6, R7 ; restores second counter
+        
+        loadn R6, #slideCounter
+        loadi R7, R6
+        cmp R5, R7
+        jeq levelSlideLoop ; if timer 1 == 0, restore all timers and execute slide loop once
+
+        ; decrements timer 1
+        dec R7
+        storei R6, R7
+
+        ; timer 2 is already restored
+
+        jmp levelSlideStartLoop
+
+      levelSlideLoop:
+        loadn R6, #slideCounter
+        loadn R7, #0
+        storei R6, R7
+
+        inc R6
+        loadn R7, #17500
+        storei R6, R7
+
+        loadi R2, R0 ; min coord rendered
+        loadi R3, R1 ; max coord rendered
+        loadn R4, #40 ; 40 will be subed from coords
+
+        sub R2, R2, R4
+        storei R0, R2 ; subs 40 to min coord to be rendered
+
+        sub R3, R3, R4 ; subs 40 to max coord to be rendered
+        storei R1, R3
+        
+        call render
+        call renderBaby
+        call renderPlayer
+
+        cmp R2, R5 ; case base, if min coord is 0, we stop
+        jne levelSlideStartLoop
 
   levelSlideFinish:
+    pop R7
+    pop R6
     pop R5
     pop R4
     pop R3
@@ -757,7 +811,7 @@ behaveMob:
       ; restores alert timer
       loadn R1, #13
       add R1, R1, R0 ; addr to alert timer1
-      loadn R2, #15
+      loadn R2, #12
       storei R1, R2
       
       inc R1 ; addr to alert timer2
@@ -2949,7 +3003,7 @@ delayMoveMob:
   loadn R4, #1 
   storei R1, R4 ; stores 1 in timer 1
   inc R1 ; addr to timer 2
-  loadn R4, #5000
+  loadn R4, #2000
   storei R1, R4 ; stores 65000  in timer 2
   loadn R2, #1 ; bool = true
 
@@ -2960,7 +3014,7 @@ delayMoveMob:
     storei R1, R2 ; decrements and stores timer 1
 
     inc R1 ; addr to timer 2
-    loadn R2, #5000
+    loadn R2, #2000
     storei R1, R2 ; restores timer 2
     loadn R2, #0 ; bool = false
 
@@ -4043,7 +4097,7 @@ DelayMove:
     dec R0
     store delayPlayerMove1, R0
     
-    loadn R0, #5000
+    loadn R0, #2000
     store delayPlayerMove2, R0
     
     jmp finishDelayMove
@@ -4064,7 +4118,7 @@ restoreDelay:
 
   ; must be stored only if playerMove succeded
   loadn R1, #1
-  loadn R0, #5000
+  loadn R0, #2000
   store delayPlayerMove2,  R0
   store delayPlayerMove1, R1
 
@@ -4454,6 +4508,24 @@ renderPlayer:
   jmp checkRightFaceStealth ; left face should not render
 
     renderLeftFace:
+      ; check if coord on screen
+      ; player render coord always equal to coordInMap
+      loadn R3, #renderVar
+      loadi R2, R3 ; min rendervar
+
+      load R3, playerCoordInMap
+
+      cmp R3, R2 ; has to be eq or gr
+      jle checkRightLegStealth
+
+      loadn R3, #renderVar
+      inc R3
+      loadi R2, R3 ; max rendervar
+      load R3, playerCoordInMap
+
+      cmp R3, R2 ; has to be le
+      jeg checkRightLegStealth
+
       outchar R1, R0
 
   checkRightFaceStealth:
@@ -4473,6 +4545,24 @@ renderPlayer:
     jmp checkRightLegStealth ; should not render right face
 
     renderRightFace:
+      ; check if coord on screen
+      ; player render coord always equal to coordInMap
+      loadn R3, #renderVar
+      loadi R2, R3 ; min rendervar
+
+      load R3, playerCoordInMap
+
+      cmp R3, R2 ; has to be eq or gr
+      jle checkRightLegStealth
+
+      loadn R3, #renderVar
+      inc R3
+      loadi R2, R3 ; max render var
+      load R3, playerCoordInMap
+
+      cmp R3, R2 ; has to be le
+      jeg checkRightLegStealth
+
       outchar R1, R0
   
   checkRightLegStealth:
@@ -4489,6 +4579,7 @@ renderPlayer:
     cmp R5, R6
     jne checkRightLegStealth_2 ; if not, checks if it's normal stealth
 
+    loadn R2, #1
     store playerProp, R2 ; stores 1
     call renderBackRightLeg ; renders scenario at cord
 
@@ -4504,10 +4595,29 @@ renderPlayer:
       jmp checkLeftLegStealth ; should not render right leg
 
       renderRightLeg:
+        ; check if coord on screen
+        ; player render coord always equal to coordInMap
+        loadn R3, #renderVar
+        loadi R2, R3 ; min rendervar
+
+        load R3, playerCoordInMap
+
+        cmp R3, R2 ; has to be eq or gr
+        jle finishRenderPlayer
+        
+        loadn R3, #renderVar
+        inc R3
+        loadi R2, R3 ; max render var
+        load R3, playerCoordInMap
+
+        cmp R3, R2 ; has to be le
+        jeg finishRenderPlayer
+
         outchar R1, R0
 
   checkLeftLegStealth:
     ; checks if left leg is in stealth coord
+    loadn R2, #1
     sub R4, R4, R2 ; R4 has mem addr of cur mapProp
     loadi R5, R4
 
@@ -4533,9 +4643,29 @@ renderPlayer:
       renderLeftLeg:
         sub R0, R0, R2 ; one coord left
         sub R1, R1, R2 ; next skin
+
+        ; check if coord on screen
+        ; player render coord always equal to coordInMap
+        loadn R3, #renderVar
+        loadi R2, R3 ; min rendervar
+
+        load R3, playerCoordInMap
+
+        cmp R3, R2 ; has to be eq or gr
+        jle activateStealth
+        
+        loadn R3, #renderVar
+        inc R3
+        loadi R2, R3 ; max render var
+        load R3, playerCoordInMap
+
+        cmp R3, R2 ; has to be le
+        jeg activateStealth
+
         outchar R1, R0
 
   activateStealth:
+    loadn R2, #1
     cmp R7, R6 ; if stealthCounter >= 2 : activate stealth
     jle finishRenderPlayer
     store playerProp, R2 ; stores 1
@@ -4693,6 +4823,279 @@ slideDown:
     pop R2
     pop R1
     rts
+
+checkCollision:
+  push R0
+  push R1
+  push R2
+
+  ; loads all possible collision coords into an array
+  load R0, playerCoordInMap
+  loadn R1, #40
+  dec R0 ; left of left face
+  loadn R2, #checkCollisionPlayerCoords
+  storei R2, R0
+  
+  add R0, R0, R1 ; left of left leg
+  inc R2
+  storei R2, R0
+
+  add R0, R0, R1
+  inc R0 ; below left leg
+  inc R2
+  storei R2, R0
+
+  inc R2
+  inc R0 ; below right leg
+  storei R2, R0
+
+  sub R0, R0, R1
+  inc R0 ; right of right leg
+  inc R2
+  storei R2, R0
+
+  sub R0, R0, R1 ; right of right face
+  inc R2
+  storei R2, R0
+
+  dec R0
+  sub R0, R0, R1 ; above right face
+  inc R2
+  storei R2, R0
+
+  dec R0 ; above left face
+  inc R2
+  storei R2, R0
+
+  ; checks if mob1 is active and in range
+  loadn R1, #1
+  load R0, mob1
+  cmp R0, R1
+
+  loadn R0, #mob1
+  ceq checkCollisionMob
+
+  ; checks if mob2 is active and in range
+  load R0, mob2
+  cmp R0, R1
+
+  loadn R0, #mob2
+  ceq checkCollisionMob
+
+  ; checks if mob3 is active and in range
+  load R0, mob3
+  cmp R0, R1
+
+  loadn R0, #mob3
+  ceq checkCollisionMob
+
+  ; checks if mob4 is active and in range
+  load R0, mob4
+  cmp R0, R1
+
+  loadn R0, #mob4
+  ceq checkCollisionMob
+
+  pop R2
+  pop R1
+  pop R0
+  rts
+
+; will check if player and mob touches, so player gets killed
+checkCollisionMob:
+  push R0
+  push R1
+  push R2
+  push R3
+  push R4
+  push R5
+
+  loadn R3, #0 ; var for first loop
+  loadn R2, #checkCollisionPlayerCoords
+  loadn R4, #8 ; first loop limit
+
+  loadn R1, #6
+  add R0, R0, R1 ; addr to mob coord
+  loadi R0, R0 ; mob coord
+  call checkCollisionMobFirstLoop
+  
+  inc R0 ; mob left face
+  loadn R2, #checkCollisionPlayerCoords
+  loadn R3, #0
+  call checkCollisionMobFirstLoop
+
+  loadn R5, #40
+  add R0, R0, R5 ; mob right leg coord
+  loadn R2, #checkCollisionPlayerCoords
+  loadn R3, #0
+  call checkCollisionMobFirstLoop
+
+  dec R0 ; mob left leg
+  loadn R2, #checkCollisionPlayerCoords
+  loadn R3, #0
+  call checkCollisionMobFirstLoop
+
+  jmp checkCollisionMobFinish
+  
+  ; will loop through collisionplayercoords
+  checkCollisionMobFirstLoop:
+    loadi R1, R2 ; cur coord to be checked
+    cmp R0, R1
+    ceq playerDeath
+
+    inc R2 ; next coord to be checked
+    inc R3 ; increments var to limit
+
+    cmp R3, R4 ; R3 mas be lesser than 8
+    jle checkCollisionMobFirstLoop
+    rts
+
+  checkCollisionMobFinish:
+    pop R5
+    pop R4
+    pop R3
+    pop R2
+    pop R1
+    pop R0
+    rts
+
+playerDeath:
+  ; delay so player can see collision
+  call collisionDelay
+
+  call printdeathscreenScreen
+  loadn R0, #1
+  store curLevel, R0 ; goes back to first level
+
+  ; restart scripts
+  call restartScripts
+
+  call spaceLoop ; loops until space is pressed
+  jmp startGame ; jumps to 0
+
+collisionDelay:
+  push R0
+  push R1
+
+  loadn R0, #10000
+  loadn R1, #0
+  collisionDelayLoop:
+    dec R0
+    cmp R0, R1
+    jne collisionDelayLoop
+  
+  pop R1
+  pop R0
+  rts
+
+restartScripts:
+  push R0
+  push R1
+
+  ; restarting alert and return scripts
+  loadn R0, #scriptReturnMob1
+  loadn R1, #65535
+  storei R0, R1
+  loadn R0, #scriptAlertMob1
+  storei R0, R1
+  loadn R0, #scriptReturnMob2
+  storei R0, R1
+  loadn R0, #scriptAlertMob2
+  storei R0, R1
+  loadn R0, #scriptReturnMob3
+  storei R0, R1
+  loadn R0, #scriptAlertMob3
+  storei R0, R1
+  loadn R0, #scriptReturnMob4
+  storei R0, R1
+  loadn R0, #scriptAlertMob4
+  storei R0, R1
+
+  ; restarting std scripts
+  loadn R0, #script1
+  loadn R1, #0
+  storei R0, R1
+
+  loadn R0, #script2
+  storei R0, R1
+
+  loadn R0, #script3
+  storei R0, R1
+
+  loadn R0, #script4
+  storei R0, R1
+
+  loadn R0, #script5
+  storei R0, R1
+
+  loadn R0, #script6
+  storei R0, R1
+
+  loadn R0, #script7
+  storei R0, R1
+
+  loadn R0, #script8
+  storei R0, R1
+
+  pop R1
+  pop R0
+  rts
+
+
+printdeathscreenScreen:
+  push R0
+  push R1
+  push R2
+  push R3
+
+  loadn R0, #deathscreen
+  loadn R1, #0
+  loadn R2, #1200
+
+  printdeathscreenScreenLoop:
+
+    add R3,R0,R1
+    loadi R3, R3
+    outchar R3, R1
+    inc R1
+    cmp R1, R2
+
+    jne printdeathscreenScreenLoop
+
+  pop R3
+  pop R2
+  pop R1
+  pop R0
+  rts
+
+printinstructionScreen:
+  push R0
+  push R1
+  push R2
+  push R3
+  push FR
+
+  loadn R0, #instructionScreen
+  loadn R1, #0
+  loadn R2, #1200
+
+  printinstructionScreenScreenLoop:
+
+    add R3,R0,R1
+    loadi R3, R3
+    outchar R3, R1
+    inc R1
+    cmp R1, R2
+
+    jne printinstructionScreenScreenLoop
+
+  pop FR
+  pop R3
+  pop R2
+  pop R1
+  pop R0
+  rts
+
   
 ; to test if it activates, delete later
 checkStealth:
@@ -4769,9 +5172,9 @@ mob1: var #19
   static mob1 + #8, #0 ; alert bool
   static mob1 + #9, #1 ; side that mob is looking at, 0 for left, 1 for right
   static mob1 + #10, #1 ; delay mobMove1 
-  static mob1 + #11, #15000 ; delay mobMove2
+  static mob1 + #11, #2000 ; delay mobMove2
   static mob1 + #12, #0 ; pointer to script
-  static mob1 + #13, #15 ; alertTimer 1, changed from 75
+  static mob1 + #13, #12 ; alertTimer 1, changed from 75
   static mob1 + #14, #65000 ; alertTimer 2 from max
   static mob1 + #15, #0 ; last movememt, vertical or horizontal
   static mob1 + #16, #scriptAlertMob1 ; pointer
@@ -4806,9 +5209,9 @@ mob2: var #19
   static mob2 + #8, #0 ; alert bool
   static mob2 + #9, #1 ; side that mob is looking at, 0 for left, 1 for right
   static mob2 + #10, #1 ; delay mobMove1 
-  static mob2 + #11, #15000 ; delay mobMove2
+  static mob2 + #11, #2000 ; delay mobMove2
   static mob2 + #12, #0 ; pointer to script
-  static mob2 + #13, #15 ; alertTimer 1, changed from 75
+  static mob2 + #13, #12 ; alertTimer 1, changed from 75
   static mob2 + #14, #65000 ; alertTimer 2 from max
   static mob2 + #15, #0 ; last movememt, vertical or horizontal
   static mob2 + #16, #scriptAlertMob2 ; pointer
@@ -4843,9 +5246,9 @@ mob3: var #19
   static mob3 + #8, #0 ; alert bool
   static mob3 + #9, #1 ; side that mob is looking at, 0 for left, 1 for right
   static mob3 + #10, #1 ; delay mobMove1 
-  static mob3 + #11, #5000; delay mobMove2
+  static mob3 + #11, #2000; delay mobMove2
   static mob3 + #12, #0 ; pointer to script
-  static mob3 + #13, #15 ; alertTimer 1, changed from 75
+  static mob3 + #13, #12 ; alertTimer 1, changed from 75
   static mob3 + #14, #65000 ; alertTimer 2 from max
   static mob3 + #15, #0 ; last movememt, vertical or horizontal
   static mob3 + #16, #scriptAlertMob3 ; pointer
@@ -4880,9 +5283,9 @@ mob4: var #19
   static mob4 + #8, #0 ; alert bool
   static mob4 + #9, #1 ; side that mob is looking at, 0 for left, 1 for right
   static mob4 + #10, #1 ; delay mobMove1 
-  static mob4 + #11, #5000; delay mobMove2
+  static mob4 + #11, #2000; delay mobMove2
   static mob4 + #12, #0 ; pointer to script
-  static mob4 + #13, #15 ; alertTimer 1, changed from 75
+  static mob4 + #13, #12 ; alertTimer 1, changed from 75
   static mob4 + #14, #65000 ; alertTimer 2 from max
   static mob4 + #15, #0 ; last movememt, vertical or horizontal
   static mob4 + #16, #scriptAlertMob4 ; pointer
@@ -5011,11 +5414,11 @@ scriptAlertCurCoordSum: var #1
   static scriptAlertCurCoordSum + #0, #0 
 
 curLevel: var #1
-  static curLevel, #3
+  static curLevel, #1
 
 ; for slide of begginning of level
 slideCounter: var #2
-  static slideCounter + #0, #20000
+  static slideCounter + #0, #10
   static slideCounter + #1, #65000
 
 
@@ -5048,6 +5451,16 @@ lineAlgorithmY: var #1
 
 lineAlgorithmP: var #1
   static lineAlgorithmP, #0 ; p
+
+checkCollisionPlayerCoords: var #8
+  static checkCollisionPlayerCoords + #0, #0
+  static checkCollisionPlayerCoords + #1, #0
+  static checkCollisionPlayerCoords + #2, #0
+  static checkCollisionPlayerCoords + #3, #0
+  static checkCollisionPlayerCoords + #4, #0
+  static checkCollisionPlayerCoords + #5, #0
+  static checkCollisionPlayerCoords + #6, #0
+  static checkCollisionPlayerCoords + #7, #0
 
 
 ; stores min and max coord to be rendered
@@ -9644,12 +10057,12 @@ menu : var #1200
   ;Linha 25
   static menu + #1000, #2560
   static menu + #1001, #2560
-  static menu + #1002, #2560
-  static menu + #1003, #2560
-  static menu + #1004, #2560
-  static menu + #1005, #2560
-  static menu + #1006, #2560
-  static menu + #1007, #2560
+  static menu + #1002, #2127
+  static menu + #1003, #2162
+  static menu + #1004, #3840
+  static menu + #1005, #2087
+  static menu + #1006, #2153
+  static menu + #1007, #2087
   static menu + #1008, #2560
   static menu + #1009, #2560
   static menu + #1010, #2560
@@ -9686,9 +10099,9 @@ menu : var #1200
   ;Linha 26
   static menu + #1040, #2560
   static menu + #1041, #2560
-  static menu + #1042, #2560
-  static menu + #1043, #2560
-  static menu + #1044, #2560
+  static menu + #1042, #2150
+  static menu + #1043, #2159
+  static menu + #1044, #2162
   static menu + #1045, #2560
   static menu + #1046, #2560
   static menu + #1047, #2560
@@ -9728,18 +10141,18 @@ menu : var #1200
   ;Linha 27
   static menu + #1080, #2560
   static menu + #1081, #2560
-  static menu + #1082, #2560
-  static menu + #1083, #2560
-  static menu + #1084, #2560
-  static menu + #1085, #2560
-  static menu + #1086, #2560
-  static menu + #1087, #2560
-  static menu + #1088, #2560
-  static menu + #1089, #2560
-  static menu + #1090, #2560
-  static menu + #1091, #2560
-  static menu + #1092, #2560
-  static menu + #1093, #2560
+  static menu + #1082, #2153
+  static menu + #1083, #2158
+  static menu + #1084, #2163
+  static menu + #1085, #2164
+  static menu + #1086, #2162
+  static menu + #1087, #2165
+  static menu + #1088, #2147
+  static menu + #1089, #2164
+  static menu + #1090, #2153
+  static menu + #1091, #2159
+  static menu + #1092, #2158
+  static menu + #1093, #2163
   static menu + #1094, #2560
   static menu + #1095, #2560
   static menu + #1096, #2816
@@ -12372,3 +12785,2525 @@ endGame : var #1200
   static endGame + #1197, #2816
   static endGame + #1198, #2816
   static endGame + #1199, #2816
+
+deathscreen : var #1200
+  ;Linha 0
+  static deathscreen + #0, #2560
+  static deathscreen + #1, #2560
+  static deathscreen + #2, #2560
+  static deathscreen + #3, #2560
+  static deathscreen + #4, #2560
+  static deathscreen + #5, #2560
+  static deathscreen + #6, #2560
+  static deathscreen + #7, #2560
+  static deathscreen + #8, #2560
+  static deathscreen + #9, #2560
+  static deathscreen + #10, #2560
+  static deathscreen + #11, #2560
+  static deathscreen + #12, #2560
+  static deathscreen + #13, #2560
+  static deathscreen + #14, #2560
+  static deathscreen + #15, #2560
+  static deathscreen + #16, #2560
+  static deathscreen + #17, #2560
+  static deathscreen + #18, #2560
+  static deathscreen + #19, #2560
+  static deathscreen + #20, #2560
+  static deathscreen + #21, #3840
+  static deathscreen + #22, #3840
+  static deathscreen + #23, #3840
+  static deathscreen + #24, #3840
+  static deathscreen + #25, #3840
+  static deathscreen + #26, #3840
+  static deathscreen + #27, #3840
+  static deathscreen + #28, #3840
+  static deathscreen + #29, #3840
+  static deathscreen + #30, #3840
+  static deathscreen + #31, #3840
+  static deathscreen + #32, #2816
+  static deathscreen + #33, #2816
+  static deathscreen + #34, #2816
+  static deathscreen + #35, #2560
+  static deathscreen + #36, #2560
+  static deathscreen + #37, #2560
+  static deathscreen + #38, #2560
+  static deathscreen + #39, #2560
+
+  ;Linha 1
+  static deathscreen + #40, #2560
+  static deathscreen + #41, #2560
+  static deathscreen + #42, #2560
+  static deathscreen + #43, #2560
+  static deathscreen + #44, #2560
+  static deathscreen + #45, #2560
+  static deathscreen + #46, #2560
+  static deathscreen + #47, #2560
+  static deathscreen + #48, #2560
+  static deathscreen + #49, #2560
+  static deathscreen + #50, #2560
+  static deathscreen + #51, #2560
+  static deathscreen + #52, #2560
+  static deathscreen + #53, #2560
+  static deathscreen + #54, #2560
+  static deathscreen + #55, #2560
+  static deathscreen + #56, #2560
+  static deathscreen + #57, #2560
+  static deathscreen + #58, #2560
+  static deathscreen + #59, #2560
+  static deathscreen + #60, #2560
+  static deathscreen + #61, #3840
+  static deathscreen + #62, #3840
+  static deathscreen + #63, #3840
+  static deathscreen + #64, #3840
+  static deathscreen + #65, #2816
+  static deathscreen + #66, #2816
+  static deathscreen + #67, #2816
+  static deathscreen + #68, #2816
+  static deathscreen + #69, #2816
+  static deathscreen + #70, #2816
+  static deathscreen + #71, #2816
+  static deathscreen + #72, #2816
+  static deathscreen + #73, #2816
+  static deathscreen + #74, #2816
+  static deathscreen + #75, #2560
+  static deathscreen + #76, #2560
+  static deathscreen + #77, #2560
+  static deathscreen + #78, #2560
+  static deathscreen + #79, #2560
+
+  ;Linha 2
+  static deathscreen + #80, #2560
+  static deathscreen + #81, #2560
+  static deathscreen + #82, #2560
+  static deathscreen + #83, #2560
+  static deathscreen + #84, #2560
+  static deathscreen + #85, #2560
+  static deathscreen + #86, #2560
+  static deathscreen + #87, #2560
+  static deathscreen + #88, #2560
+  static deathscreen + #89, #2560
+  static deathscreen + #90, #2560
+  static deathscreen + #91, #2560
+  static deathscreen + #92, #2560
+  static deathscreen + #93, #2560
+  static deathscreen + #94, #2560
+  static deathscreen + #95, #2560
+  static deathscreen + #96, #2560
+  static deathscreen + #97, #2560
+  static deathscreen + #98, #2560
+  static deathscreen + #99, #2560
+  static deathscreen + #100, #2560
+  static deathscreen + #101, #2816
+  static deathscreen + #102, #2816
+  static deathscreen + #103, #2816
+  static deathscreen + #104, #2816
+  static deathscreen + #105, #2816
+  static deathscreen + #106, #2816
+  static deathscreen + #107, #2816
+  static deathscreen + #108, #2816
+  static deathscreen + #109, #2816
+  static deathscreen + #110, #2816
+  static deathscreen + #111, #2816
+  static deathscreen + #112, #2816
+  static deathscreen + #113, #2816
+  static deathscreen + #114, #2816
+  static deathscreen + #115, #2560
+  static deathscreen + #116, #2560
+  static deathscreen + #117, #2560
+  static deathscreen + #118, #2560
+  static deathscreen + #119, #2560
+
+  ;Linha 3
+  static deathscreen + #120, #2560
+  static deathscreen + #121, #2560
+  static deathscreen + #122, #2560
+  static deathscreen + #123, #2560
+  static deathscreen + #124, #2560
+  static deathscreen + #125, #2560
+  static deathscreen + #126, #2560
+  static deathscreen + #127, #2560
+  static deathscreen + #128, #2560
+  static deathscreen + #129, #2560
+  static deathscreen + #130, #2560
+  static deathscreen + #131, #2560
+  static deathscreen + #132, #2560
+  static deathscreen + #133, #2560
+  static deathscreen + #134, #2560
+  static deathscreen + #135, #2560
+  static deathscreen + #136, #2560
+  static deathscreen + #137, #2560
+  static deathscreen + #138, #2560
+  static deathscreen + #139, #2560
+  static deathscreen + #140, #2560
+  static deathscreen + #141, #2816
+  static deathscreen + #142, #2816
+  static deathscreen + #143, #2816
+  static deathscreen + #144, #2816
+  static deathscreen + #145, #2816
+  static deathscreen + #146, #2816
+  static deathscreen + #147, #2816
+  static deathscreen + #148, #2816
+  static deathscreen + #149, #2816
+  static deathscreen + #150, #3840
+  static deathscreen + #151, #3840
+  static deathscreen + #152, #3840
+  static deathscreen + #153, #3840
+  static deathscreen + #154, #3840
+  static deathscreen + #155, #2560
+  static deathscreen + #156, #2560
+  static deathscreen + #157, #2560
+  static deathscreen + #158, #2560
+  static deathscreen + #159, #2560
+
+  ;Linha 4
+  static deathscreen + #160, #2560
+  static deathscreen + #161, #2560
+  static deathscreen + #162, #2560
+  static deathscreen + #163, #2560
+  static deathscreen + #164, #2560
+  static deathscreen + #165, #2560
+  static deathscreen + #166, #2560
+  static deathscreen + #167, #2560
+  static deathscreen + #168, #2560
+  static deathscreen + #169, #2560
+  static deathscreen + #170, #2560
+  static deathscreen + #171, #2560
+  static deathscreen + #172, #2560
+  static deathscreen + #173, #2560
+  static deathscreen + #174, #2560
+  static deathscreen + #175, #2560
+  static deathscreen + #176, #2560
+  static deathscreen + #177, #2560
+  static deathscreen + #178, #2560
+  static deathscreen + #179, #2560
+  static deathscreen + #180, #2560
+  static deathscreen + #181, #2816
+  static deathscreen + #182, #2816
+  static deathscreen + #183, #2816
+  static deathscreen + #184, #2816
+  static deathscreen + #185, #2816
+  static deathscreen + #186, #3840
+  static deathscreen + #187, #3840
+  static deathscreen + #188, #3840
+  static deathscreen + #189, #3840
+  static deathscreen + #190, #3840
+  static deathscreen + #191, #3840
+  static deathscreen + #192, #3840
+  static deathscreen + #193, #3840
+  static deathscreen + #194, #3840
+  static deathscreen + #195, #2560
+  static deathscreen + #196, #2560
+  static deathscreen + #197, #2560
+  static deathscreen + #198, #2560
+  static deathscreen + #199, #2560
+
+  ;Linha 5
+  static deathscreen + #200, #2560
+  static deathscreen + #201, #2560
+  static deathscreen + #202, #2560
+  static deathscreen + #203, #2560
+  static deathscreen + #204, #2560
+  static deathscreen + #205, #2560
+  static deathscreen + #206, #2560
+  static deathscreen + #207, #2560
+  static deathscreen + #208, #2560
+  static deathscreen + #209, #2560
+  static deathscreen + #210, #2560
+  static deathscreen + #211, #2560
+  static deathscreen + #212, #2560
+  static deathscreen + #213, #2560
+  static deathscreen + #214, #1536
+  static deathscreen + #215, #1536
+  static deathscreen + #216, #1536
+  static deathscreen + #217, #2560
+  static deathscreen + #218, #2560
+  static deathscreen + #219, #2560
+  static deathscreen + #220, #2560
+  static deathscreen + #221, #3840
+  static deathscreen + #222, #3840
+  static deathscreen + #223, #3840
+  static deathscreen + #224, #3840
+  static deathscreen + #225, #3840
+  static deathscreen + #226, #3840
+  static deathscreen + #227, #3840
+  static deathscreen + #228, #3840
+  static deathscreen + #229, #3840
+  static deathscreen + #230, #3840
+  static deathscreen + #231, #3840
+  static deathscreen + #232, #3840
+  static deathscreen + #233, #3840
+  static deathscreen + #234, #3840
+  static deathscreen + #235, #2560
+  static deathscreen + #236, #2560
+  static deathscreen + #237, #2560
+  static deathscreen + #238, #2560
+  static deathscreen + #239, #2560
+
+  ;Linha 6
+  static deathscreen + #240, #2560
+  static deathscreen + #241, #2560
+  static deathscreen + #242, #2560
+  static deathscreen + #243, #2560
+  static deathscreen + #244, #2560
+  static deathscreen + #245, #2560
+  static deathscreen + #246, #2560
+  static deathscreen + #247, #2560
+  static deathscreen + #248, #2560
+  static deathscreen + #249, #2560
+  static deathscreen + #250, #2560
+  static deathscreen + #251, #2560
+  static deathscreen + #252, #1536
+  static deathscreen + #253, #768
+  static deathscreen + #254, #768
+  static deathscreen + #255, #1536
+  static deathscreen + #256, #1536
+  static deathscreen + #257, #1536
+  static deathscreen + #258, #1536
+  static deathscreen + #259, #1536
+  static deathscreen + #260, #2560
+  static deathscreen + #261, #2560
+  static deathscreen + #262, #3840
+  static deathscreen + #263, #3840
+  static deathscreen + #264, #3840
+  static deathscreen + #265, #3840
+  static deathscreen + #266, #3840
+  static deathscreen + #267, #3840
+  static deathscreen + #268, #3840
+  static deathscreen + #269, #3840
+  static deathscreen + #270, #3840
+  static deathscreen + #271, #3840
+  static deathscreen + #272, #3840
+  static deathscreen + #273, #3840
+  static deathscreen + #274, #3840
+  static deathscreen + #275, #2560
+  static deathscreen + #276, #2560
+  static deathscreen + #277, #2560
+  static deathscreen + #278, #2560
+  static deathscreen + #279, #2560
+
+  ;Linha 7
+  static deathscreen + #280, #2560
+  static deathscreen + #281, #2560
+  static deathscreen + #282, #2560
+  static deathscreen + #283, #2560
+  static deathscreen + #284, #2560
+  static deathscreen + #285, #2560
+  static deathscreen + #286, #2560
+  static deathscreen + #287, #2560
+  static deathscreen + #288, #2560
+  static deathscreen + #289, #2560
+  static deathscreen + #290, #2560
+  static deathscreen + #291, #1536
+  static deathscreen + #292, #768
+  static deathscreen + #293, #1536
+  static deathscreen + #294, #1536
+  static deathscreen + #295, #768
+  static deathscreen + #296, #1536
+  static deathscreen + #297, #1536
+  static deathscreen + #298, #1536
+  static deathscreen + #299, #1536
+  static deathscreen + #300, #2560
+  static deathscreen + #301, #2560
+  static deathscreen + #302, #3840
+  static deathscreen + #303, #3840
+  static deathscreen + #304, #3840
+  static deathscreen + #305, #3840
+  static deathscreen + #306, #3840
+  static deathscreen + #307, #3840
+  static deathscreen + #308, #3840
+  static deathscreen + #309, #3840
+  static deathscreen + #310, #3840
+  static deathscreen + #311, #3840
+  static deathscreen + #312, #2816
+  static deathscreen + #313, #2816
+  static deathscreen + #314, #2816
+  static deathscreen + #315, #2560
+  static deathscreen + #316, #2560
+  static deathscreen + #317, #2560
+  static deathscreen + #318, #2560
+  static deathscreen + #319, #2560
+
+  ;Linha 8
+  static deathscreen + #320, #2560
+  static deathscreen + #321, #2560
+  static deathscreen + #322, #2560
+  static deathscreen + #323, #2560
+  static deathscreen + #324, #2560
+  static deathscreen + #325, #2560
+  static deathscreen + #326, #2560
+  static deathscreen + #327, #2560
+  static deathscreen + #328, #2560
+  static deathscreen + #329, #2560
+  static deathscreen + #330, #2560
+  static deathscreen + #331, #768
+  static deathscreen + #332, #1536
+  static deathscreen + #333, #1536
+  static deathscreen + #334, #1536
+  static deathscreen + #335, #256
+  static deathscreen + #336, #2048
+  static deathscreen + #337, #1536
+  static deathscreen + #338, #1536
+  static deathscreen + #339, #1536
+  static deathscreen + #340, #1536
+  static deathscreen + #341, #2560
+  static deathscreen + #342, #2560
+  static deathscreen + #343, #3840
+  static deathscreen + #344, #3840
+  static deathscreen + #345, #3840
+  static deathscreen + #346, #3840
+  static deathscreen + #347, #2816
+  static deathscreen + #348, #2816
+  static deathscreen + #349, #2816
+  static deathscreen + #350, #2816
+  static deathscreen + #351, #2816
+  static deathscreen + #352, #2816
+  static deathscreen + #353, #2816
+  static deathscreen + #354, #2560
+  static deathscreen + #355, #2560
+  static deathscreen + #356, #2560
+  static deathscreen + #357, #2560
+  static deathscreen + #358, #2560
+  static deathscreen + #359, #2560
+
+  ;Linha 9
+  static deathscreen + #360, #2560
+  static deathscreen + #361, #2560
+  static deathscreen + #362, #2560
+  static deathscreen + #363, #2560
+  static deathscreen + #364, #2560
+  static deathscreen + #365, #2560
+  static deathscreen + #366, #2560
+  static deathscreen + #367, #2560
+  static deathscreen + #368, #2560
+  static deathscreen + #369, #2560
+  static deathscreen + #370, #2560
+  static deathscreen + #371, #768
+  static deathscreen + #372, #1536
+  static deathscreen + #373, #1536
+  static deathscreen + #374, #1536
+  static deathscreen + #375, #1536
+  static deathscreen + #376, #256
+  static deathscreen + #377, #1536
+  static deathscreen + #378, #1536
+  static deathscreen + #379, #1536
+  static deathscreen + #380, #1536
+  static deathscreen + #381, #2560
+  static deathscreen + #382, #2560
+  static deathscreen + #383, #2816
+  static deathscreen + #384, #2816
+  static deathscreen + #385, #2816
+  static deathscreen + #386, #2816
+  static deathscreen + #387, #2816
+  static deathscreen + #388, #2816
+  static deathscreen + #389, #2816
+  static deathscreen + #390, #2816
+  static deathscreen + #391, #2816
+  static deathscreen + #392, #2816
+  static deathscreen + #393, #2816
+  static deathscreen + #394, #2560
+  static deathscreen + #395, #2560
+  static deathscreen + #396, #2560
+  static deathscreen + #397, #2560
+  static deathscreen + #398, #2560
+  static deathscreen + #399, #2560
+
+  ;Linha 10
+  static deathscreen + #400, #2560
+  static deathscreen + #401, #2560
+  static deathscreen + #402, #2560
+  static deathscreen + #403, #2560
+  static deathscreen + #404, #2560
+  static deathscreen + #405, #2560
+  static deathscreen + #406, #2560
+  static deathscreen + #407, #2560
+  static deathscreen + #408, #2560
+  static deathscreen + #409, #2560
+  static deathscreen + #410, #2560
+  static deathscreen + #411, #768
+  static deathscreen + #412, #2560
+  static deathscreen + #413, #1536
+  static deathscreen + #414, #1536
+  static deathscreen + #415, #1536
+  static deathscreen + #416, #1536
+  static deathscreen + #417, #1536
+  static deathscreen + #418, #1536
+  static deathscreen + #419, #1536
+  static deathscreen + #420, #1536
+  static deathscreen + #421, #2560
+  static deathscreen + #422, #2560
+  static deathscreen + #423, #2560
+  static deathscreen + #424, #2816
+  static deathscreen + #425, #2816
+  static deathscreen + #426, #2816
+  static deathscreen + #427, #2816
+  static deathscreen + #428, #2816
+  static deathscreen + #429, #2816
+  static deathscreen + #430, #2816
+  static deathscreen + #431, #2816
+  static deathscreen + #432, #2816
+  static deathscreen + #433, #2560
+  static deathscreen + #434, #2560
+  static deathscreen + #435, #2560
+  static deathscreen + #436, #2560
+  static deathscreen + #437, #2560
+  static deathscreen + #438, #2560
+  static deathscreen + #439, #2560
+
+  ;Linha 11
+  static deathscreen + #440, #2560
+  static deathscreen + #441, #2560
+  static deathscreen + #442, #2560
+  static deathscreen + #443, #2560
+  static deathscreen + #444, #2560
+  static deathscreen + #445, #2560
+  static deathscreen + #446, #2560
+  static deathscreen + #447, #2560
+  static deathscreen + #448, #2560
+  static deathscreen + #449, #2560
+  static deathscreen + #450, #2560
+  static deathscreen + #451, #768
+  static deathscreen + #452, #2560
+  static deathscreen + #453, #1536
+  static deathscreen + #454, #1536
+  static deathscreen + #455, #1536
+  static deathscreen + #456, #1536
+  static deathscreen + #457, #1536
+  static deathscreen + #458, #1536
+  static deathscreen + #459, #256
+  static deathscreen + #460, #1536
+  static deathscreen + #461, #2560
+  static deathscreen + #462, #2560
+  static deathscreen + #463, #2560
+  static deathscreen + #464, #2560
+  static deathscreen + #465, #3840
+  static deathscreen + #466, #3840
+  static deathscreen + #467, #2816
+  static deathscreen + #468, #2816
+  static deathscreen + #469, #2816
+  static deathscreen + #470, #3840
+  static deathscreen + #471, #3840
+  static deathscreen + #472, #2560
+  static deathscreen + #473, #2560
+  static deathscreen + #474, #2560
+  static deathscreen + #475, #2560
+  static deathscreen + #476, #2560
+  static deathscreen + #477, #2560
+  static deathscreen + #478, #2560
+  static deathscreen + #479, #2560
+
+  ;Linha 12
+  static deathscreen + #480, #2560
+  static deathscreen + #481, #2560
+  static deathscreen + #482, #2560
+  static deathscreen + #483, #2560
+  static deathscreen + #484, #2560
+  static deathscreen + #485, #2560
+  static deathscreen + #486, #2560
+  static deathscreen + #487, #2560
+  static deathscreen + #488, #2560
+  static deathscreen + #489, #2560
+  static deathscreen + #490, #2560
+  static deathscreen + #491, #2560
+  static deathscreen + #492, #2560
+  static deathscreen + #493, #1536
+  static deathscreen + #494, #1536
+  static deathscreen + #495, #1536
+  static deathscreen + #496, #1536
+  static deathscreen + #497, #256
+  static deathscreen + #498, #1536
+  static deathscreen + #499, #1536
+  static deathscreen + #500, #2560
+  static deathscreen + #501, #2560
+  static deathscreen + #502, #2560
+  static deathscreen + #503, #2560
+  static deathscreen + #504, #2560
+  static deathscreen + #505, #3840
+  static deathscreen + #506, #3840
+  static deathscreen + #507, #2560
+  static deathscreen + #508, #2560
+  static deathscreen + #509, #2560
+  static deathscreen + #510, #3840
+  static deathscreen + #511, #3840
+  static deathscreen + #512, #2560
+  static deathscreen + #513, #2560
+  static deathscreen + #514, #2560
+  static deathscreen + #515, #2560
+  static deathscreen + #516, #2560
+  static deathscreen + #517, #2560
+  static deathscreen + #518, #2560
+  static deathscreen + #519, #2560
+
+  ;Linha 13
+  static deathscreen + #520, #2560
+  static deathscreen + #521, #2560
+  static deathscreen + #522, #2560
+  static deathscreen + #523, #2560
+  static deathscreen + #524, #2560
+  static deathscreen + #525, #2560
+  static deathscreen + #526, #2560
+  static deathscreen + #527, #2560
+  static deathscreen + #528, #2560
+  static deathscreen + #529, #2560
+  static deathscreen + #530, #2560
+  static deathscreen + #531, #2560
+  static deathscreen + #532, #2560
+  static deathscreen + #533, #2560
+  static deathscreen + #534, #1536
+  static deathscreen + #535, #1536
+  static deathscreen + #536, #1536
+  static deathscreen + #537, #1536
+  static deathscreen + #538, #2560
+  static deathscreen + #539, #2560
+  static deathscreen + #540, #2560
+  static deathscreen + #541, #2560
+  static deathscreen + #542, #2560
+  static deathscreen + #543, #2560
+  static deathscreen + #544, #2560
+  static deathscreen + #545, #3840
+  static deathscreen + #546, #3840
+  static deathscreen + #547, #2560
+  static deathscreen + #548, #2560
+  static deathscreen + #549, #2560
+  static deathscreen + #550, #3840
+  static deathscreen + #551, #3840
+  static deathscreen + #552, #2560
+  static deathscreen + #553, #2560
+  static deathscreen + #554, #2560
+  static deathscreen + #555, #2560
+  static deathscreen + #556, #2560
+  static deathscreen + #557, #2560
+  static deathscreen + #558, #2560
+  static deathscreen + #559, #2560
+
+  ;Linha 14
+  static deathscreen + #560, #2560
+  static deathscreen + #561, #2560
+  static deathscreen + #562, #2560
+  static deathscreen + #563, #2560
+  static deathscreen + #564, #2560
+  static deathscreen + #565, #2560
+  static deathscreen + #566, #2560
+  static deathscreen + #567, #2560
+  static deathscreen + #568, #2560
+  static deathscreen + #569, #2560
+  static deathscreen + #570, #2560
+  static deathscreen + #571, #2560
+  static deathscreen + #572, #2560
+  static deathscreen + #573, #2560
+  static deathscreen + #574, #1536
+  static deathscreen + #575, #1536
+  static deathscreen + #576, #2560
+  static deathscreen + #577, #2560
+  static deathscreen + #578, #2560
+  static deathscreen + #579, #2560
+  static deathscreen + #580, #2560
+  static deathscreen + #581, #2560
+  static deathscreen + #582, #2560
+  static deathscreen + #583, #2560
+  static deathscreen + #584, #2560
+  static deathscreen + #585, #3840
+  static deathscreen + #586, #3840
+  static deathscreen + #587, #2560
+  static deathscreen + #588, #2560
+  static deathscreen + #589, #2560
+  static deathscreen + #590, #3840
+  static deathscreen + #591, #3840
+  static deathscreen + #592, #2560
+  static deathscreen + #593, #2560
+  static deathscreen + #594, #2560
+  static deathscreen + #595, #2560
+  static deathscreen + #596, #2560
+  static deathscreen + #597, #2560
+  static deathscreen + #598, #2560
+  static deathscreen + #599, #2560
+
+  ;Linha 15
+  static deathscreen + #600, #2560
+  static deathscreen + #601, #2560
+  static deathscreen + #602, #2560
+  static deathscreen + #603, #2560
+  static deathscreen + #604, #2560
+  static deathscreen + #605, #2560
+  static deathscreen + #606, #2560
+  static deathscreen + #607, #2560
+  static deathscreen + #608, #2560
+  static deathscreen + #609, #2560
+  static deathscreen + #610, #2560
+  static deathscreen + #611, #2560
+  static deathscreen + #612, #2560
+  static deathscreen + #613, #2560
+  static deathscreen + #614, #2560
+  static deathscreen + #615, #2560
+  static deathscreen + #616, #2560
+  static deathscreen + #617, #2560
+  static deathscreen + #618, #2560
+  static deathscreen + #619, #2560
+  static deathscreen + #620, #2560
+  static deathscreen + #621, #2560
+  static deathscreen + #622, #2560
+  static deathscreen + #623, #2560
+  static deathscreen + #624, #2560
+  static deathscreen + #625, #3840
+  static deathscreen + #626, #3840
+  static deathscreen + #627, #2560
+  static deathscreen + #628, #2560
+  static deathscreen + #629, #2560
+  static deathscreen + #630, #3840
+  static deathscreen + #631, #3840
+  static deathscreen + #632, #2560
+  static deathscreen + #633, #2560
+  static deathscreen + #634, #2560
+  static deathscreen + #635, #2560
+  static deathscreen + #636, #2560
+  static deathscreen + #637, #2560
+  static deathscreen + #638, #2560
+  static deathscreen + #639, #2560
+
+  ;Linha 16
+  static deathscreen + #640, #2560
+  static deathscreen + #641, #2560
+  static deathscreen + #642, #2560
+  static deathscreen + #643, #2560
+  static deathscreen + #644, #2560
+  static deathscreen + #645, #2560
+  static deathscreen + #646, #2560
+  static deathscreen + #647, #2560
+  static deathscreen + #648, #2560
+  static deathscreen + #649, #2560
+  static deathscreen + #650, #2560
+  static deathscreen + #651, #2560
+  static deathscreen + #652, #2560
+  static deathscreen + #653, #2560
+  static deathscreen + #654, #2560
+  static deathscreen + #655, #2560
+  static deathscreen + #656, #2560
+  static deathscreen + #657, #2560
+  static deathscreen + #658, #2560
+  static deathscreen + #659, #2560
+  static deathscreen + #660, #2560
+  static deathscreen + #661, #2560
+  static deathscreen + #662, #2560
+  static deathscreen + #663, #2560
+  static deathscreen + #664, #2560
+  static deathscreen + #665, #3840
+  static deathscreen + #666, #3840
+  static deathscreen + #667, #2560
+  static deathscreen + #668, #2560
+  static deathscreen + #669, #2560
+  static deathscreen + #670, #3840
+  static deathscreen + #671, #3840
+  static deathscreen + #672, #2560
+  static deathscreen + #673, #2560
+  static deathscreen + #674, #2560
+  static deathscreen + #675, #2560
+  static deathscreen + #676, #2560
+  static deathscreen + #677, #2560
+  static deathscreen + #678, #2560
+  static deathscreen + #679, #2560
+
+  ;Linha 17
+  static deathscreen + #680, #2560
+  static deathscreen + #681, #2132
+  static deathscreen + #682, #2152
+  static deathscreen + #683, #2149
+  static deathscreen + #684, #3840
+  static deathscreen + #685, #2146
+  static deathscreen + #686, #2156
+  static deathscreen + #687, #2159
+  static deathscreen + #688, #2159
+  static deathscreen + #689, #2157
+  static deathscreen + #690, #3840
+  static deathscreen + #691, #2152
+  static deathscreen + #692, #2145
+  static deathscreen + #693, #2163
+  static deathscreen + #694, #3840
+  static deathscreen + #695, #2167
+  static deathscreen + #696, #2153
+  static deathscreen + #697, #2164
+  static deathscreen + #698, #2152
+  static deathscreen + #699, #2149
+  static deathscreen + #700, #2162
+  static deathscreen + #701, #2149
+  static deathscreen + #702, #2148
+  static deathscreen + #703, #2092
+  static deathscreen + #704, #2560
+  static deathscreen + #705, #3840
+  static deathscreen + #706, #3840
+  static deathscreen + #707, #2560
+  static deathscreen + #708, #2560
+  static deathscreen + #709, #2560
+  static deathscreen + #710, #3840
+  static deathscreen + #711, #3840
+  static deathscreen + #712, #2560
+  static deathscreen + #713, #2560
+  static deathscreen + #714, #2560
+  static deathscreen + #715, #2560
+  static deathscreen + #716, #2560
+  static deathscreen + #717, #2560
+  static deathscreen + #718, #2560
+  static deathscreen + #719, #2560
+
+  ;Linha 18
+  static deathscreen + #720, #2560
+  static deathscreen + #721, #2160
+  static deathscreen + #722, #2149
+  static deathscreen + #723, #2164
+  static deathscreen + #724, #2152
+  static deathscreen + #725, #2145
+  static deathscreen + #726, #2156
+  static deathscreen + #727, #2163
+  static deathscreen + #728, #3840
+  static deathscreen + #729, #2150
+  static deathscreen + #730, #2145
+  static deathscreen + #731, #2156
+  static deathscreen + #732, #2156
+  static deathscreen + #733, #2092
+  static deathscreen + #734, #2560
+  static deathscreen + #735, #2560
+  static deathscreen + #736, #2560
+  static deathscreen + #737, #2560
+  static deathscreen + #738, #2560
+  static deathscreen + #739, #2560
+  static deathscreen + #740, #2560
+  static deathscreen + #741, #2560
+  static deathscreen + #742, #2560
+  static deathscreen + #743, #2560
+  static deathscreen + #744, #2560
+  static deathscreen + #745, #3840
+  static deathscreen + #746, #3840
+  static deathscreen + #747, #2560
+  static deathscreen + #748, #2560
+  static deathscreen + #749, #2560
+  static deathscreen + #750, #3840
+  static deathscreen + #751, #3840
+  static deathscreen + #752, #2560
+  static deathscreen + #753, #2560
+  static deathscreen + #754, #2560
+  static deathscreen + #755, #2560
+  static deathscreen + #756, #2560
+  static deathscreen + #757, #2560
+  static deathscreen + #758, #2560
+  static deathscreen + #759, #2560
+
+  ;Linha 19
+  static deathscreen + #760, #2560
+  static deathscreen + #761, #2560
+  static deathscreen + #762, #2560
+  static deathscreen + #763, #2560
+  static deathscreen + #764, #2560
+  static deathscreen + #765, #2560
+  static deathscreen + #766, #2560
+  static deathscreen + #767, #2560
+  static deathscreen + #768, #2560
+  static deathscreen + #769, #2560
+  static deathscreen + #770, #2560
+  static deathscreen + #771, #2560
+  static deathscreen + #772, #2560
+  static deathscreen + #773, #2560
+  static deathscreen + #774, #2560
+  static deathscreen + #775, #2560
+  static deathscreen + #776, #2560
+  static deathscreen + #777, #2560
+  static deathscreen + #778, #2560
+  static deathscreen + #779, #2560
+  static deathscreen + #780, #2560
+  static deathscreen + #781, #2560
+  static deathscreen + #782, #2560
+  static deathscreen + #783, #2560
+  static deathscreen + #784, #2560
+  static deathscreen + #785, #3840
+  static deathscreen + #786, #3840
+  static deathscreen + #787, #2560
+  static deathscreen + #788, #2560
+  static deathscreen + #789, #2560
+  static deathscreen + #790, #3840
+  static deathscreen + #791, #3840
+  static deathscreen + #792, #2560
+  static deathscreen + #793, #2560
+  static deathscreen + #794, #2560
+  static deathscreen + #795, #2560
+  static deathscreen + #796, #2560
+  static deathscreen + #797, #2560
+  static deathscreen + #798, #2560
+  static deathscreen + #799, #2560
+
+  ;Linha 20
+  static deathscreen + #800, #2560
+  static deathscreen + #801, #2113
+  static deathscreen + #802, #3840
+  static deathscreen + #803, #2150
+  static deathscreen + #804, #2156
+  static deathscreen + #805, #2149
+  static deathscreen + #806, #2149
+  static deathscreen + #807, #2164
+  static deathscreen + #808, #2153
+  static deathscreen + #809, #2158
+  static deathscreen + #810, #2151
+  static deathscreen + #811, #3840
+  static deathscreen + #812, #2156
+  static deathscreen + #813, #2153
+  static deathscreen + #814, #2150
+  static deathscreen + #815, #2149
+  static deathscreen + #816, #2092
+  static deathscreen + #817, #2560
+  static deathscreen + #818, #2560
+  static deathscreen + #819, #2560
+  static deathscreen + #820, #2560
+  static deathscreen + #821, #2560
+  static deathscreen + #822, #2560
+  static deathscreen + #823, #2560
+  static deathscreen + #824, #2560
+  static deathscreen + #825, #3840
+  static deathscreen + #826, #3840
+  static deathscreen + #827, #2560
+  static deathscreen + #828, #2560
+  static deathscreen + #829, #2048
+  static deathscreen + #830, #2560
+  static deathscreen + #831, #2560
+  static deathscreen + #832, #2560
+  static deathscreen + #833, #2560
+  static deathscreen + #834, #2560
+  static deathscreen + #835, #2560
+  static deathscreen + #836, #2560
+  static deathscreen + #837, #2560
+  static deathscreen + #838, #2560
+  static deathscreen + #839, #2560
+
+  ;Linha 21
+  static deathscreen + #840, #2560
+  static deathscreen + #841, #2158
+  static deathscreen + #842, #2159
+  static deathscreen + #843, #2167
+  static deathscreen + #844, #3840
+  static deathscreen + #845, #2156
+  static deathscreen + #846, #2159
+  static deathscreen + #847, #2163
+  static deathscreen + #848, #2164
+  static deathscreen + #849, #3840
+  static deathscreen + #850, #2164
+  static deathscreen + #851, #2159
+  static deathscreen + #852, #3840
+  static deathscreen + #853, #2145
+  static deathscreen + #854, #2156
+  static deathscreen + #855, #2156
+  static deathscreen + #856, #2094
+  static deathscreen + #857, #2560
+  static deathscreen + #858, #2560
+  static deathscreen + #859, #2560
+  static deathscreen + #860, #2560
+  static deathscreen + #861, #2560
+  static deathscreen + #862, #2560
+  static deathscreen + #863, #2560
+  static deathscreen + #864, #2560
+  static deathscreen + #865, #3840
+  static deathscreen + #866, #3840
+  static deathscreen + #867, #2560
+  static deathscreen + #868, #2560
+  static deathscreen + #869, #2048
+  static deathscreen + #870, #2560
+  static deathscreen + #871, #2560
+  static deathscreen + #872, #2560
+  static deathscreen + #873, #2560
+  static deathscreen + #874, #2560
+  static deathscreen + #875, #2560
+  static deathscreen + #876, #2560
+  static deathscreen + #877, #2560
+  static deathscreen + #878, #2560
+  static deathscreen + #879, #2560
+
+  ;Linha 22
+  static deathscreen + #880, #2560
+  static deathscreen + #881, #2560
+  static deathscreen + #882, #2560
+  static deathscreen + #883, #2560
+  static deathscreen + #884, #2560
+  static deathscreen + #885, #2560
+  static deathscreen + #886, #2560
+  static deathscreen + #887, #2560
+  static deathscreen + #888, #2560
+  static deathscreen + #889, #2560
+  static deathscreen + #890, #2560
+  static deathscreen + #891, #2560
+  static deathscreen + #892, #2560
+  static deathscreen + #893, #2560
+  static deathscreen + #894, #2560
+  static deathscreen + #895, #2560
+  static deathscreen + #896, #2560
+  static deathscreen + #897, #2560
+  static deathscreen + #898, #2560
+  static deathscreen + #899, #2560
+  static deathscreen + #900, #2560
+  static deathscreen + #901, #2560
+  static deathscreen + #902, #2560
+  static deathscreen + #903, #2560
+  static deathscreen + #904, #2560
+  static deathscreen + #905, #3840
+  static deathscreen + #906, #3840
+  static deathscreen + #907, #2560
+  static deathscreen + #908, #2048
+  static deathscreen + #909, #2560
+  static deathscreen + #910, #2560
+  static deathscreen + #911, #2560
+  static deathscreen + #912, #2560
+  static deathscreen + #913, #2560
+  static deathscreen + #914, #2560
+  static deathscreen + #915, #2560
+  static deathscreen + #916, #2560
+  static deathscreen + #917, #2560
+  static deathscreen + #918, #2560
+  static deathscreen + #919, #2560
+
+  ;Linha 23
+  static deathscreen + #920, #2560
+  static deathscreen + #921, #2132
+  static deathscreen + #922, #2152
+  static deathscreen + #923, #2149
+  static deathscreen + #924, #3840
+  static deathscreen + #925, #2163
+  static deathscreen + #926, #2164
+  static deathscreen + #927, #2153
+  static deathscreen + #928, #2158
+  static deathscreen + #929, #2151
+  static deathscreen + #930, #3840
+  static deathscreen + #931, #2159
+  static deathscreen + #932, #2150
+  static deathscreen + #933, #3840
+  static deathscreen + #934, #2150
+  static deathscreen + #935, #2145
+  static deathscreen + #936, #2164
+  static deathscreen + #937, #2149
+  static deathscreen + #938, #2092
+  static deathscreen + #939, #2560
+  static deathscreen + #940, #2560
+  static deathscreen + #941, #2560
+  static deathscreen + #942, #2560
+  static deathscreen + #943, #2560
+  static deathscreen + #944, #2560
+  static deathscreen + #945, #3840
+  static deathscreen + #946, #3840
+  static deathscreen + #947, #2560
+  static deathscreen + #948, #2560
+  static deathscreen + #949, #2560
+  static deathscreen + #950, #2560
+  static deathscreen + #951, #2560
+  static deathscreen + #952, #2560
+  static deathscreen + #953, #2560
+  static deathscreen + #954, #2560
+  static deathscreen + #955, #2560
+  static deathscreen + #956, #2560
+  static deathscreen + #957, #2560
+  static deathscreen + #958, #2560
+  static deathscreen + #959, #2560
+
+  ;Linha 24
+  static deathscreen + #960, #2560
+  static deathscreen + #961, #2145
+  static deathscreen + #962, #3840
+  static deathscreen + #963, #2147
+  static deathscreen + #964, #2162
+  static deathscreen + #965, #2165
+  static deathscreen + #966, #2149
+  static deathscreen + #967, #2156
+  static deathscreen + #968, #3840
+  static deathscreen + #969, #2148
+  static deathscreen + #970, #2149
+  static deathscreen + #971, #2147
+  static deathscreen + #972, #2162
+  static deathscreen + #973, #2149
+  static deathscreen + #974, #2149
+  static deathscreen + #975, #2092
+  static deathscreen + #976, #2560
+  static deathscreen + #977, #2560
+  static deathscreen + #978, #2560
+  static deathscreen + #979, #2560
+  static deathscreen + #980, #2560
+  static deathscreen + #981, #2560
+  static deathscreen + #982, #2560
+  static deathscreen + #983, #2560
+  static deathscreen + #984, #2560
+  static deathscreen + #985, #2560
+  static deathscreen + #986, #2560
+  static deathscreen + #987, #2560
+  static deathscreen + #988, #2560
+  static deathscreen + #989, #2560
+  static deathscreen + #990, #2560
+  static deathscreen + #991, #2560
+  static deathscreen + #992, #2560
+  static deathscreen + #993, #2560
+  static deathscreen + #994, #2560
+  static deathscreen + #995, #2560
+  static deathscreen + #996, #2560
+  static deathscreen + #997, #2560
+  static deathscreen + #998, #2560
+  static deathscreen + #999, #2560
+
+  ;Linha 25
+  static deathscreen + #1000, #2560
+  static deathscreen + #1001, #2560
+  static deathscreen + #1002, #2560
+  static deathscreen + #1003, #2560
+  static deathscreen + #1004, #2560
+  static deathscreen + #1005, #2560
+  static deathscreen + #1006, #2560
+  static deathscreen + #1007, #2560
+  static deathscreen + #1008, #2560
+  static deathscreen + #1009, #2560
+  static deathscreen + #1010, #2560
+  static deathscreen + #1011, #2560
+  static deathscreen + #1012, #2560
+  static deathscreen + #1013, #2560
+  static deathscreen + #1014, #2560
+  static deathscreen + #1015, #2560
+  static deathscreen + #1016, #2560
+  static deathscreen + #1017, #2560
+  static deathscreen + #1018, #2560
+  static deathscreen + #1019, #2560
+  static deathscreen + #1020, #2560
+  static deathscreen + #1021, #2560
+  static deathscreen + #1022, #2560
+  static deathscreen + #1023, #2560
+  static deathscreen + #1024, #2560
+  static deathscreen + #1025, #2560
+  static deathscreen + #1026, #2560
+  static deathscreen + #1027, #2560
+  static deathscreen + #1028, #2560
+  static deathscreen + #1029, #2560
+  static deathscreen + #1030, #2560
+  static deathscreen + #1031, #2560
+  static deathscreen + #1032, #2560
+  static deathscreen + #1033, #2560
+  static deathscreen + #1034, #2560
+  static deathscreen + #1035, #2560
+  static deathscreen + #1036, #2560
+  static deathscreen + #1037, #2560
+  static deathscreen + #1038, #2560
+  static deathscreen + #1039, #2560
+
+  ;Linha 26
+  static deathscreen + #1040, #2560
+  static deathscreen + #1041, #2132
+  static deathscreen + #1042, #2152
+  static deathscreen + #1043, #2149
+  static deathscreen + #1044, #3840
+  static deathscreen + #1045, #2151
+  static deathscreen + #1046, #2145
+  static deathscreen + #1047, #2162
+  static deathscreen + #1048, #2148
+  static deathscreen + #1049, #2149
+  static deathscreen + #1050, #2158
+  static deathscreen + #1051, #3840
+  static deathscreen + #1052, #2150
+  static deathscreen + #1053, #2145
+  static deathscreen + #1054, #2148
+  static deathscreen + #1055, #2149
+  static deathscreen + #1056, #2163
+  static deathscreen + #1057, #3840
+  static deathscreen + #1058, #2164
+  static deathscreen + #1059, #2159
+  static deathscreen + #1060, #3840
+  static deathscreen + #1061, #2157
+  static deathscreen + #1062, #2149
+  static deathscreen + #1063, #2157
+  static deathscreen + #1064, #2159
+  static deathscreen + #1065, #2162
+  static deathscreen + #1066, #2169
+  static deathscreen + #1067, #2094
+  static deathscreen + #1068, #2094
+  static deathscreen + #1069, #2094
+  static deathscreen + #1070, #2560
+  static deathscreen + #1071, #2560
+  static deathscreen + #1072, #2560
+  static deathscreen + #1073, #2560
+  static deathscreen + #1074, #2560
+  static deathscreen + #1075, #2560
+  static deathscreen + #1076, #2560
+  static deathscreen + #1077, #2560
+  static deathscreen + #1078, #2560
+  static deathscreen + #1079, #2560
+
+  ;Linha 27
+  static deathscreen + #1080, #2560
+  static deathscreen + #1081, #2560
+  static deathscreen + #1082, #2560
+  static deathscreen + #1083, #2560
+  static deathscreen + #1084, #2560
+  static deathscreen + #1085, #2560
+  static deathscreen + #1086, #2560
+  static deathscreen + #1087, #2560
+  static deathscreen + #1088, #2560
+  static deathscreen + #1089, #2560
+  static deathscreen + #1090, #2560
+  static deathscreen + #1091, #2560
+  static deathscreen + #1092, #2560
+  static deathscreen + #1093, #2560
+  static deathscreen + #1094, #2560
+  static deathscreen + #1095, #2560
+  static deathscreen + #1096, #2560
+  static deathscreen + #1097, #2560
+  static deathscreen + #1098, #2560
+  static deathscreen + #1099, #2560
+  static deathscreen + #1100, #2560
+  static deathscreen + #1101, #2560
+  static deathscreen + #1102, #2560
+  static deathscreen + #1103, #2560
+  static deathscreen + #1104, #2560
+  static deathscreen + #1105, #2560
+  static deathscreen + #1106, #2560
+  static deathscreen + #1107, #2560
+  static deathscreen + #1108, #2560
+  static deathscreen + #1109, #2560
+  static deathscreen + #1110, #2560
+  static deathscreen + #1111, #2560
+  static deathscreen + #1112, #2560
+  static deathscreen + #1113, #2560
+  static deathscreen + #1114, #2560
+  static deathscreen + #1115, #2560
+  static deathscreen + #1116, #2560
+  static deathscreen + #1117, #2560
+  static deathscreen + #1118, #2560
+  static deathscreen + #1119, #2560
+
+  ;Linha 28
+  static deathscreen + #1120, #2560
+  static deathscreen + #1121, #2560
+  static deathscreen + #1122, #2560
+  static deathscreen + #1123, #2560
+  static deathscreen + #1124, #2560
+  static deathscreen + #1125, #2560
+  static deathscreen + #1126, #2560
+  static deathscreen + #1127, #2560
+  static deathscreen + #1128, #2560
+  static deathscreen + #1129, #2560
+  static deathscreen + #1130, #2560
+  static deathscreen + #1131, #2560
+  static deathscreen + #1132, #2560
+  static deathscreen + #1133, #2560
+  static deathscreen + #1134, #2560
+  static deathscreen + #1135, #2560
+  static deathscreen + #1136, #2560
+  static deathscreen + #1137, #2560
+  static deathscreen + #1138, #2560
+  static deathscreen + #1139, #2560
+  static deathscreen + #1140, #2560
+  static deathscreen + #1141, #2560
+  static deathscreen + #1142, #2560
+  static deathscreen + #1143, #2560
+  static deathscreen + #1144, #2560
+  static deathscreen + #1145, #2560
+  static deathscreen + #1146, #2560
+  static deathscreen + #1147, #2560
+  static deathscreen + #1148, #2560
+  static deathscreen + #1149, #2560
+  static deathscreen + #1150, #2560
+  static deathscreen + #1151, #2560
+  static deathscreen + #1152, #2560
+  static deathscreen + #1153, #2560
+  static deathscreen + #1154, #2560
+  static deathscreen + #1155, #2560
+  static deathscreen + #1156, #2560
+  static deathscreen + #1157, #2560
+  static deathscreen + #1158, #2560
+  static deathscreen + #1159, #2560
+
+  ;Linha 29
+  static deathscreen + #1160, #2560
+  static deathscreen + #1161, #2560
+  static deathscreen + #1162, #2560
+  static deathscreen + #1163, #2560
+  static deathscreen + #1164, #2560
+  static deathscreen + #1165, #2560
+  static deathscreen + #1166, #2560
+  static deathscreen + #1167, #2560
+  static deathscreen + #1168, #2560
+  static deathscreen + #1169, #2560
+  static deathscreen + #1170, #2560
+  static deathscreen + #1171, #2560
+  static deathscreen + #1172, #2560
+  static deathscreen + #1173, #2560
+  static deathscreen + #1174, #2560
+  static deathscreen + #1175, #2560
+  static deathscreen + #1176, #2560
+  static deathscreen + #1177, #2560
+  static deathscreen + #1178, #2560
+  static deathscreen + #1179, #2560
+  static deathscreen + #1180, #2560
+  static deathscreen + #1181, #2560
+  static deathscreen + #1182, #2560
+  static deathscreen + #1183, #2560
+  static deathscreen + #1184, #2560
+  static deathscreen + #1185, #2560
+  static deathscreen + #1186, #2560
+  static deathscreen + #1187, #2560
+  static deathscreen + #1188, #2560
+  static deathscreen + #1189, #2560
+  static deathscreen + #1190, #2560
+  static deathscreen + #1191, #2560
+  static deathscreen + #1192, #2560
+  static deathscreen + #1193, #2560
+  static deathscreen + #1194, #2560
+  static deathscreen + #1195, #2560
+  static deathscreen + #1196, #2560
+  static deathscreen + #1197, #2560
+  static deathscreen + #1198, #2560
+  static deathscreen + #1199, #2560
+
+instructionScreen : var #1200
+  ;Linha 0
+  static instructionScreen + #0, #2560
+  static instructionScreen + #1, #2560
+  static instructionScreen + #2, #2560
+  static instructionScreen + #3, #2560
+  static instructionScreen + #4, #2560
+  static instructionScreen + #5, #2560
+  static instructionScreen + #6, #2560
+  static instructionScreen + #7, #2560
+  static instructionScreen + #8, #2560
+  static instructionScreen + #9, #2560
+  static instructionScreen + #10, #2560
+  static instructionScreen + #11, #2560
+  static instructionScreen + #12, #2560
+  static instructionScreen + #13, #2560
+  static instructionScreen + #14, #2560
+  static instructionScreen + #15, #2560
+  static instructionScreen + #16, #2560
+  static instructionScreen + #17, #2560
+  static instructionScreen + #18, #2560
+  static instructionScreen + #19, #2560
+  static instructionScreen + #20, #2560
+  static instructionScreen + #21, #2560
+  static instructionScreen + #22, #2560
+  static instructionScreen + #23, #2560
+  static instructionScreen + #24, #2560
+  static instructionScreen + #25, #2560
+  static instructionScreen + #26, #2560
+  static instructionScreen + #27, #2560
+  static instructionScreen + #28, #2560
+  static instructionScreen + #29, #2560
+  static instructionScreen + #30, #2560
+  static instructionScreen + #31, #2560
+  static instructionScreen + #32, #2560
+  static instructionScreen + #33, #2560
+  static instructionScreen + #34, #2560
+  static instructionScreen + #35, #2560
+  static instructionScreen + #36, #2560
+  static instructionScreen + #37, #2560
+  static instructionScreen + #38, #2560
+  static instructionScreen + #39, #2560
+
+  ;Linha 1
+  static instructionScreen + #40, #2560
+  static instructionScreen + #41, #2560
+  static instructionScreen + #42, #2560
+  static instructionScreen + #43, #2560
+  static instructionScreen + #44, #2560
+  static instructionScreen + #45, #2560
+  static instructionScreen + #46, #2560
+  static instructionScreen + #47, #2560
+  static instructionScreen + #48, #2560
+  static instructionScreen + #49, #2560
+  static instructionScreen + #50, #2560
+  static instructionScreen + #51, #2560
+  static instructionScreen + #52, #2560
+  static instructionScreen + #53, #2560
+  static instructionScreen + #54, #2560
+  static instructionScreen + #55, #2560
+  static instructionScreen + #56, #2560
+  static instructionScreen + #57, #2560
+  static instructionScreen + #58, #2560
+  static instructionScreen + #59, #2560
+  static instructionScreen + #60, #2560
+  static instructionScreen + #61, #2560
+  static instructionScreen + #62, #2560
+  static instructionScreen + #63, #2560
+  static instructionScreen + #64, #2560
+  static instructionScreen + #65, #2560
+  static instructionScreen + #66, #2560
+  static instructionScreen + #67, #2560
+  static instructionScreen + #68, #2560
+  static instructionScreen + #69, #2560
+  static instructionScreen + #70, #2560
+  static instructionScreen + #71, #2560
+  static instructionScreen + #72, #2560
+  static instructionScreen + #73, #2560
+  static instructionScreen + #74, #2560
+  static instructionScreen + #75, #2560
+  static instructionScreen + #76, #2560
+  static instructionScreen + #77, #2560
+  static instructionScreen + #78, #2560
+  static instructionScreen + #79, #2560
+
+  ;Linha 2
+  static instructionScreen + #80, #2560
+  static instructionScreen + #81, #2560
+  static instructionScreen + #82, #2560
+  static instructionScreen + #83, #2560
+  static instructionScreen + #84, #2560
+  static instructionScreen + #85, #2560
+  static instructionScreen + #86, #2560
+  static instructionScreen + #87, #2560
+  static instructionScreen + #88, #2560
+  static instructionScreen + #89, #2560
+  static instructionScreen + #90, #2560
+  static instructionScreen + #91, #2560
+  static instructionScreen + #92, #2560
+  static instructionScreen + #93, #2560
+  static instructionScreen + #94, #2560
+  static instructionScreen + #95, #2560
+  static instructionScreen + #96, #2560
+  static instructionScreen + #97, #2560
+  static instructionScreen + #98, #2560
+  static instructionScreen + #99, #2560
+  static instructionScreen + #100, #2560
+  static instructionScreen + #101, #2560
+  static instructionScreen + #102, #2560
+  static instructionScreen + #103, #2560
+  static instructionScreen + #104, #2560
+  static instructionScreen + #105, #2560
+  static instructionScreen + #106, #2560
+  static instructionScreen + #107, #2560
+  static instructionScreen + #108, #2560
+  static instructionScreen + #109, #2560
+  static instructionScreen + #110, #2560
+  static instructionScreen + #111, #2560
+  static instructionScreen + #112, #2560
+  static instructionScreen + #113, #2560
+  static instructionScreen + #114, #2560
+  static instructionScreen + #115, #2560
+  static instructionScreen + #116, #2560
+  static instructionScreen + #117, #2560
+  static instructionScreen + #118, #2560
+  static instructionScreen + #119, #2560
+
+  ;Linha 3
+  static instructionScreen + #120, #2560
+  static instructionScreen + #121, #2560
+  static instructionScreen + #122, #2560
+  static instructionScreen + #123, #2128
+  static instructionScreen + #124, #2162
+  static instructionScreen + #125, #2149
+  static instructionScreen + #126, #2163
+  static instructionScreen + #127, #2163
+  static instructionScreen + #128, #2560
+  static instructionScreen + #129, #2560
+  static instructionScreen + #130, #2560
+  static instructionScreen + #131, #2087
+  static instructionScreen + #132, #2167
+  static instructionScreen + #133, #2087
+  static instructionScreen + #134, #2560
+  static instructionScreen + #135, #2087
+  static instructionScreen + #136, #2145
+  static instructionScreen + #137, #2087
+  static instructionScreen + #138, #2560
+  static instructionScreen + #139, #2305
+  static instructionScreen + #140, #2306
+  static instructionScreen + #141, #2560
+  static instructionScreen + #142, #2560
+  static instructionScreen + #143, #2560
+  static instructionScreen + #144, #2560
+  static instructionScreen + #145, #2560
+  static instructionScreen + #146, #2560
+  static instructionScreen + #147, #2560
+  static instructionScreen + #148, #2560
+  static instructionScreen + #149, #2560
+  static instructionScreen + #150, #2560
+  static instructionScreen + #151, #2560
+  static instructionScreen + #152, #2560
+  static instructionScreen + #153, #2560
+  static instructionScreen + #154, #2560
+  static instructionScreen + #155, #2560
+  static instructionScreen + #156, #2560
+  static instructionScreen + #157, #2560
+  static instructionScreen + #158, #2560
+  static instructionScreen + #159, #2560
+
+  ;Linha 4
+  static instructionScreen + #160, #2560
+  static instructionScreen + #161, #2560
+  static instructionScreen + #162, #2560
+  static instructionScreen + #163, #2164
+  static instructionScreen + #164, #2159
+  static instructionScreen + #165, #2560
+  static instructionScreen + #166, #2157
+  static instructionScreen + #167, #2159
+  static instructionScreen + #168, #2166
+  static instructionScreen + #169, #2149
+  static instructionScreen + #170, #2560
+  static instructionScreen + #171, #2087
+  static instructionScreen + #172, #2163
+  static instructionScreen + #173, #2087
+  static instructionScreen + #174, #2560
+  static instructionScreen + #175, #2087
+  static instructionScreen + #176, #2148
+  static instructionScreen + #177, #2087
+  static instructionScreen + #178, #2560
+  static instructionScreen + #179, #772
+  static instructionScreen + #180, #771
+  static instructionScreen + #181, #2560
+  static instructionScreen + #182, #2560
+  static instructionScreen + #183, #2560
+  static instructionScreen + #184, #2560
+  static instructionScreen + #185, #2560
+  static instructionScreen + #186, #2560
+  static instructionScreen + #187, #2560
+  static instructionScreen + #188, #2560
+  static instructionScreen + #189, #2560
+  static instructionScreen + #190, #2560
+  static instructionScreen + #191, #2560
+  static instructionScreen + #192, #2560
+  static instructionScreen + #193, #2560
+  static instructionScreen + #194, #2560
+  static instructionScreen + #195, #2560
+  static instructionScreen + #196, #2560
+  static instructionScreen + #197, #2560
+  static instructionScreen + #198, #2560
+  static instructionScreen + #199, #2560
+
+  ;Linha 5
+  static instructionScreen + #200, #2560
+  static instructionScreen + #201, #2560
+  static instructionScreen + #202, #2560
+  static instructionScreen + #203, #2560
+  static instructionScreen + #204, #2560
+  static instructionScreen + #205, #2560
+  static instructionScreen + #206, #2560
+  static instructionScreen + #207, #2560
+  static instructionScreen + #208, #2560
+  static instructionScreen + #209, #2560
+  static instructionScreen + #210, #2560
+  static instructionScreen + #211, #2560
+  static instructionScreen + #212, #2560
+  static instructionScreen + #213, #2560
+  static instructionScreen + #214, #2560
+  static instructionScreen + #215, #2560
+  static instructionScreen + #216, #2560
+  static instructionScreen + #217, #2560
+  static instructionScreen + #218, #2560
+  static instructionScreen + #219, #2560
+  static instructionScreen + #220, #2560
+  static instructionScreen + #221, #2560
+  static instructionScreen + #222, #2560
+  static instructionScreen + #223, #2560
+  static instructionScreen + #224, #2560
+  static instructionScreen + #225, #2560
+  static instructionScreen + #226, #2560
+  static instructionScreen + #227, #2560
+  static instructionScreen + #228, #2560
+  static instructionScreen + #229, #2560
+  static instructionScreen + #230, #2560
+  static instructionScreen + #231, #2560
+  static instructionScreen + #232, #2560
+  static instructionScreen + #233, #2560
+  static instructionScreen + #234, #2560
+  static instructionScreen + #235, #2560
+  static instructionScreen + #236, #2560
+  static instructionScreen + #237, #2560
+  static instructionScreen + #238, #2560
+  static instructionScreen + #239, #2560
+
+  ;Linha 6
+  static instructionScreen + #240, #2560
+  static instructionScreen + #241, #2560
+  static instructionScreen + #242, #2560
+  static instructionScreen + #243, #2560
+  static instructionScreen + #244, #2560
+  static instructionScreen + #245, #2560
+  static instructionScreen + #246, #2560
+  static instructionScreen + #247, #2560
+  static instructionScreen + #248, #2560
+  static instructionScreen + #249, #2560
+  static instructionScreen + #250, #2560
+  static instructionScreen + #251, #2560
+  static instructionScreen + #252, #2560
+  static instructionScreen + #253, #2560
+  static instructionScreen + #254, #2560
+  static instructionScreen + #255, #2560
+  static instructionScreen + #256, #2560
+  static instructionScreen + #257, #2560
+  static instructionScreen + #258, #2560
+  static instructionScreen + #259, #2560
+  static instructionScreen + #260, #2560
+  static instructionScreen + #261, #2560
+  static instructionScreen + #262, #2560
+  static instructionScreen + #263, #2560
+  static instructionScreen + #264, #2560
+  static instructionScreen + #265, #2560
+  static instructionScreen + #266, #2560
+  static instructionScreen + #267, #2560
+  static instructionScreen + #268, #2560
+  static instructionScreen + #269, #2560
+  static instructionScreen + #270, #2560
+  static instructionScreen + #271, #2560
+  static instructionScreen + #272, #2560
+  static instructionScreen + #273, #2560
+  static instructionScreen + #274, #2560
+  static instructionScreen + #275, #2560
+  static instructionScreen + #276, #2560
+  static instructionScreen + #277, #2560
+  static instructionScreen + #278, #2560
+  static instructionScreen + #279, #2560
+
+  ;Linha 7
+  static instructionScreen + #280, #2560
+  static instructionScreen + #281, #2560
+  static instructionScreen + #282, #2560
+  static instructionScreen + #283, #2137
+  static instructionScreen + #284, #2159
+  static instructionScreen + #285, #2165
+  static instructionScreen + #286, #2560
+  static instructionScreen + #287, #2145
+  static instructionScreen + #288, #2162
+  static instructionScreen + #289, #2149
+  static instructionScreen + #290, #2560
+  static instructionScreen + #291, #2145
+  static instructionScreen + #292, #2560
+  static instructionScreen + #293, #2147
+  static instructionScreen + #294, #2145
+  static instructionScreen + #295, #2158
+  static instructionScreen + #296, #2153
+  static instructionScreen + #297, #2166
+  static instructionScreen + #298, #2159
+  static instructionScreen + #299, #2162
+  static instructionScreen + #300, #2149
+  static instructionScreen + #301, #2560
+  static instructionScreen + #302, #2150
+  static instructionScreen + #303, #2156
+  static instructionScreen + #304, #2159
+  static instructionScreen + #305, #2167
+  static instructionScreen + #306, #2149
+  static instructionScreen + #307, #2162
+  static instructionScreen + #308, #2560
+  static instructionScreen + #309, #2560
+  static instructionScreen + #310, #2560
+  static instructionScreen + #311, #2560
+  static instructionScreen + #312, #2560
+  static instructionScreen + #313, #2560
+  static instructionScreen + #314, #2560
+  static instructionScreen + #315, #2560
+  static instructionScreen + #316, #2560
+  static instructionScreen + #317, #2560
+  static instructionScreen + #318, #2560
+  static instructionScreen + #319, #2560
+
+  ;Linha 8
+  static instructionScreen + #320, #2560
+  static instructionScreen + #321, #2560
+  static instructionScreen + #322, #2560
+  static instructionScreen + #323, #2560
+  static instructionScreen + #324, #2560
+  static instructionScreen + #325, #2560
+  static instructionScreen + #326, #2560
+  static instructionScreen + #327, #2560
+  static instructionScreen + #328, #2560
+  static instructionScreen + #329, #2560
+  static instructionScreen + #330, #2560
+  static instructionScreen + #331, #2560
+  static instructionScreen + #332, #2560
+  static instructionScreen + #333, #2560
+  static instructionScreen + #334, #2560
+  static instructionScreen + #335, #2560
+  static instructionScreen + #336, #2560
+  static instructionScreen + #337, #2560
+  static instructionScreen + #338, #2560
+  static instructionScreen + #339, #2560
+  static instructionScreen + #340, #2560
+  static instructionScreen + #341, #2560
+  static instructionScreen + #342, #2560
+  static instructionScreen + #343, #2560
+  static instructionScreen + #344, #2560
+  static instructionScreen + #345, #2560
+  static instructionScreen + #346, #2560
+  static instructionScreen + #347, #2560
+  static instructionScreen + #348, #2560
+  static instructionScreen + #349, #2560
+  static instructionScreen + #350, #2560
+  static instructionScreen + #351, #2560
+  static instructionScreen + #352, #2560
+  static instructionScreen + #353, #2560
+  static instructionScreen + #354, #2560
+  static instructionScreen + #355, #2560
+  static instructionScreen + #356, #2560
+  static instructionScreen + #357, #2560
+  static instructionScreen + #358, #2560
+  static instructionScreen + #359, #2560
+
+  ;Linha 9
+  static instructionScreen + #360, #2560
+  static instructionScreen + #361, #2560
+  static instructionScreen + #362, #2560
+  static instructionScreen + #363, #2145
+  static instructionScreen + #364, #2158
+  static instructionScreen + #365, #2148
+  static instructionScreen + #366, #2560
+  static instructionScreen + #367, #2169
+  static instructionScreen + #368, #2159
+  static instructionScreen + #369, #2165
+  static instructionScreen + #370, #2560
+  static instructionScreen + #371, #2145
+  static instructionScreen + #372, #2162
+  static instructionScreen + #373, #2149
+  static instructionScreen + #374, #2560
+  static instructionScreen + #375, #2152
+  static instructionScreen + #376, #2165
+  static instructionScreen + #377, #2158
+  static instructionScreen + #378, #2151
+  static instructionScreen + #379, #2162
+  static instructionScreen + #380, #2169
+  static instructionScreen + #381, #2110
+  static instructionScreen + #382, #2560
+  static instructionScreen + #383, #2560
+  static instructionScreen + #384, #2560
+  static instructionScreen + #385, #2560
+  static instructionScreen + #386, #2560
+  static instructionScreen + #387, #2137
+  static instructionScreen + #388, #2159
+  static instructionScreen + #389, #2165
+  static instructionScreen + #390, #2560
+  static instructionScreen + #391, #2147
+  static instructionScreen + #392, #2145
+  static instructionScreen + #393, #2158
+  static instructionScreen + #394, #2560
+  static instructionScreen + #395, #2152
+  static instructionScreen + #396, #2153
+  static instructionScreen + #397, #2148
+  static instructionScreen + #398, #2149
+  static instructionScreen + #399, #2560
+
+  ;Linha 10
+  static instructionScreen + #400, #2560
+  static instructionScreen + #401, #2560
+  static instructionScreen + #402, #2560
+  static instructionScreen + #403, #2560
+  static instructionScreen + #404, #2560
+  static instructionScreen + #405, #2560
+  static instructionScreen + #406, #2560
+  static instructionScreen + #407, #2560
+  static instructionScreen + #408, #2560
+  static instructionScreen + #409, #2560
+  static instructionScreen + #410, #2560
+  static instructionScreen + #411, #2560
+  static instructionScreen + #412, #2560
+  static instructionScreen + #413, #2560
+  static instructionScreen + #414, #2560
+  static instructionScreen + #415, #2560
+  static instructionScreen + #416, #2560
+  static instructionScreen + #417, #2560
+  static instructionScreen + #418, #2560
+  static instructionScreen + #419, #2560
+  static instructionScreen + #420, #2560
+  static instructionScreen + #421, #2560
+  static instructionScreen + #422, #2560
+  static instructionScreen + #423, #2560
+  static instructionScreen + #424, #2560
+  static instructionScreen + #425, #2560
+  static instructionScreen + #426, #2560
+  static instructionScreen + #427, #2560
+  static instructionScreen + #428, #2560
+  static instructionScreen + #429, #2560
+  static instructionScreen + #430, #2560
+  static instructionScreen + #431, #2560
+  static instructionScreen + #432, #2560
+  static instructionScreen + #433, #2560
+  static instructionScreen + #434, #2560
+  static instructionScreen + #435, #2560
+  static instructionScreen + #436, #2560
+  static instructionScreen + #437, #2560
+  static instructionScreen + #438, #2560
+  static instructionScreen + #439, #2560
+
+  ;Linha 11
+  static instructionScreen + #440, #2560
+  static instructionScreen + #441, #2560
+  static instructionScreen + #442, #2560
+  static instructionScreen + #443, #2560
+  static instructionScreen + #444, #2560
+  static instructionScreen + #445, #2560
+  static instructionScreen + #446, #2560
+  static instructionScreen + #447, #2560
+  static instructionScreen + #448, #2560
+  static instructionScreen + #449, #2560
+  static instructionScreen + #450, #2560
+  static instructionScreen + #451, #2560
+  static instructionScreen + #452, #2560
+  static instructionScreen + #453, #2560
+  static instructionScreen + #454, #2560
+  static instructionScreen + #455, #2560
+  static instructionScreen + #456, #2560
+  static instructionScreen + #457, #2560
+  static instructionScreen + #458, #2560
+  static instructionScreen + #459, #2560
+  static instructionScreen + #460, #2560
+  static instructionScreen + #461, #2560
+  static instructionScreen + #462, #2560
+  static instructionScreen + #463, #2560
+  static instructionScreen + #464, #2560
+  static instructionScreen + #465, #2560
+  static instructionScreen + #466, #2560
+  static instructionScreen + #467, #2146
+  static instructionScreen + #468, #2149
+  static instructionScreen + #469, #2152
+  static instructionScreen + #470, #2153
+  static instructionScreen + #471, #2158
+  static instructionScreen + #472, #2148
+  static instructionScreen + #473, #2560
+  static instructionScreen + #474, #2160
+  static instructionScreen + #475, #2156
+  static instructionScreen + #476, #2145
+  static instructionScreen + #477, #2158
+  static instructionScreen + #478, #2164
+  static instructionScreen + #479, #2163
+
+  ;Linha 12
+  static instructionScreen + #480, #2560
+  static instructionScreen + #481, #2560
+  static instructionScreen + #482, #2560
+  static instructionScreen + #483, #2121
+  static instructionScreen + #484, #2158
+  static instructionScreen + #485, #2166
+  static instructionScreen + #486, #2145
+  static instructionScreen + #487, #2148
+  static instructionScreen + #488, #2149
+  static instructionScreen + #489, #2560
+  static instructionScreen + #490, #2164
+  static instructionScreen + #491, #2152
+  static instructionScreen + #492, #2149
+  static instructionScreen + #493, #2560
+  static instructionScreen + #494, #2146
+  static instructionScreen + #495, #2149
+  static instructionScreen + #496, #2149
+  static instructionScreen + #497, #2163
+  static instructionScreen + #498, #2087
+  static instructionScreen + #499, #2560
+  static instructionScreen + #500, #2146
+  static instructionScreen + #501, #2145
+  static instructionScreen + #502, #2163
+  static instructionScreen + #503, #2149
+  static instructionScreen + #504, #2560
+  static instructionScreen + #505, #2560
+  static instructionScreen + #506, #2560
+  static instructionScreen + #507, #2560
+  static instructionScreen + #508, #2560
+  static instructionScreen + #509, #2560
+  static instructionScreen + #510, #2560
+  static instructionScreen + #511, #2560
+  static instructionScreen + #512, #2560
+  static instructionScreen + #513, #2560
+  static instructionScreen + #514, #2560
+  static instructionScreen + #515, #2560
+  static instructionScreen + #516, #2560
+  static instructionScreen + #517, #2560
+  static instructionScreen + #518, #2560
+  static instructionScreen + #519, #2560
+
+  ;Linha 13
+  static instructionScreen + #520, #2560
+  static instructionScreen + #521, #2560
+  static instructionScreen + #522, #2560
+  static instructionScreen + #523, #2560
+  static instructionScreen + #524, #2560
+  static instructionScreen + #525, #2560
+  static instructionScreen + #526, #2560
+  static instructionScreen + #527, #2560
+  static instructionScreen + #528, #2560
+  static instructionScreen + #529, #2560
+  static instructionScreen + #530, #2560
+  static instructionScreen + #531, #2560
+  static instructionScreen + #532, #2560
+  static instructionScreen + #533, #2560
+  static instructionScreen + #534, #2560
+  static instructionScreen + #535, #2560
+  static instructionScreen + #536, #2560
+  static instructionScreen + #537, #2560
+  static instructionScreen + #538, #2560
+  static instructionScreen + #539, #2560
+  static instructionScreen + #540, #2560
+  static instructionScreen + #541, #2560
+  static instructionScreen + #542, #2560
+  static instructionScreen + #543, #2560
+  static instructionScreen + #544, #2560
+  static instructionScreen + #545, #2560
+  static instructionScreen + #546, #2560
+  static instructionScreen + #547, #2123
+  static instructionScreen + #548, #2149
+  static instructionScreen + #549, #2149
+  static instructionScreen + #550, #2160
+  static instructionScreen + #551, #2560
+  static instructionScreen + #552, #2145
+  static instructionScreen + #553, #2158
+  static instructionScreen + #554, #2560
+  static instructionScreen + #555, #2149
+  static instructionScreen + #556, #2169
+  static instructionScreen + #557, #2149
+  static instructionScreen + #558, #2560
+  static instructionScreen + #559, #2560
+
+  ;Linha 14
+  static instructionScreen + #560, #2560
+  static instructionScreen + #561, #2560
+  static instructionScreen + #562, #2560
+  static instructionScreen + #563, #2145
+  static instructionScreen + #564, #2158
+  static instructionScreen + #565, #2148
+  static instructionScreen + #566, #2560
+  static instructionScreen + #567, #2149
+  static instructionScreen + #568, #2145
+  static instructionScreen + #569, #2164
+  static instructionScreen + #570, #2560
+  static instructionScreen + #571, #2164
+  static instructionScreen + #572, #2152
+  static instructionScreen + #573, #2149
+  static instructionScreen + #574, #2153
+  static instructionScreen + #575, #2162
+  static instructionScreen + #576, #2560
+  static instructionScreen + #577, #2146
+  static instructionScreen + #578, #2145
+  static instructionScreen + #579, #2146
+  static instructionScreen + #580, #2169
+  static instructionScreen + #581, #2560
+  static instructionScreen + #582, #2560
+  static instructionScreen + #583, #2560
+  static instructionScreen + #584, #2560
+  static instructionScreen + #585, #2560
+  static instructionScreen + #586, #2560
+  static instructionScreen + #587, #2560
+  static instructionScreen + #588, #2560
+  static instructionScreen + #589, #2560
+  static instructionScreen + #590, #2560
+  static instructionScreen + #591, #2560
+  static instructionScreen + #592, #2560
+  static instructionScreen + #593, #2560
+  static instructionScreen + #594, #2560
+  static instructionScreen + #595, #2560
+  static instructionScreen + #596, #2560
+  static instructionScreen + #597, #2560
+  static instructionScreen + #598, #2560
+  static instructionScreen + #599, #2560
+
+  ;Linha 15
+  static instructionScreen + #600, #2560
+  static instructionScreen + #601, #2560
+  static instructionScreen + #602, #2560
+  static instructionScreen + #603, #2560
+  static instructionScreen + #604, #2560
+  static instructionScreen + #605, #2560
+  static instructionScreen + #606, #2560
+  static instructionScreen + #607, #2560
+  static instructionScreen + #608, #2560
+  static instructionScreen + #609, #2560
+  static instructionScreen + #610, #2560
+  static instructionScreen + #611, #2560
+  static instructionScreen + #612, #2560
+  static instructionScreen + #613, #2560
+  static instructionScreen + #614, #2560
+  static instructionScreen + #615, #2560
+  static instructionScreen + #616, #2560
+  static instructionScreen + #617, #2560
+  static instructionScreen + #618, #2560
+  static instructionScreen + #619, #2560
+  static instructionScreen + #620, #2560
+  static instructionScreen + #621, #2560
+  static instructionScreen + #622, #2560
+  static instructionScreen + #623, #2560
+  static instructionScreen + #624, #2560
+  static instructionScreen + #625, #2560
+  static instructionScreen + #626, #2560
+  static instructionScreen + #627, #2145
+  static instructionScreen + #628, #2164
+  static instructionScreen + #629, #2560
+  static instructionScreen + #630, #2164
+  static instructionScreen + #631, #2152
+  static instructionScreen + #632, #2149
+  static instructionScreen + #633, #2560
+  static instructionScreen + #634, #2164
+  static instructionScreen + #635, #2159
+  static instructionScreen + #636, #2160
+  static instructionScreen + #637, #2560
+  static instructionScreen + #638, #2560
+  static instructionScreen + #639, #2560
+
+  ;Linha 16
+  static instructionScreen + #640, #2560
+  static instructionScreen + #641, #2560
+  static instructionScreen + #642, #2560
+  static instructionScreen + #643, #2167
+  static instructionScreen + #644, #2153
+  static instructionScreen + #645, #2164
+  static instructionScreen + #646, #2152
+  static instructionScreen + #647, #2560
+  static instructionScreen + #648, #2164
+  static instructionScreen + #649, #2152
+  static instructionScreen + #650, #2149
+  static instructionScreen + #651, #2560
+  static instructionScreen + #652, #2163
+  static instructionScreen + #653, #2160
+  static instructionScreen + #654, #2145
+  static instructionScreen + #655, #2147
+  static instructionScreen + #656, #2149
+  static instructionScreen + #657, #2560
+  static instructionScreen + #658, #2155
+  static instructionScreen + #659, #2149
+  static instructionScreen + #660, #2169
+  static instructionScreen + #661, #2110
+  static instructionScreen + #662, #2560
+  static instructionScreen + #663, #1827
+  static instructionScreen + #664, #2850
+  static instructionScreen + #665, #2560
+  static instructionScreen + #666, #2560
+  static instructionScreen + #667, #2560
+  static instructionScreen + #668, #2560
+  static instructionScreen + #669, #2560
+  static instructionScreen + #670, #2560
+  static instructionScreen + #671, #2560
+  static instructionScreen + #672, #2560
+  static instructionScreen + #673, #2560
+  static instructionScreen + #674, #2560
+  static instructionScreen + #675, #2560
+  static instructionScreen + #676, #2560
+  static instructionScreen + #677, #2560
+  static instructionScreen + #678, #2560
+  static instructionScreen + #679, #2560
+
+  ;Linha 17
+  static instructionScreen + #680, #2560
+  static instructionScreen + #681, #2560
+  static instructionScreen + #682, #2560
+  static instructionScreen + #683, #2560
+  static instructionScreen + #684, #2560
+  static instructionScreen + #685, #2560
+  static instructionScreen + #686, #2560
+  static instructionScreen + #687, #2560
+  static instructionScreen + #688, #2560
+  static instructionScreen + #689, #2560
+  static instructionScreen + #690, #2560
+  static instructionScreen + #691, #2560
+  static instructionScreen + #692, #2560
+  static instructionScreen + #693, #2560
+  static instructionScreen + #694, #2560
+  static instructionScreen + #695, #2560
+  static instructionScreen + #696, #2560
+  static instructionScreen + #697, #2560
+  static instructionScreen + #698, #2560
+  static instructionScreen + #699, #2560
+  static instructionScreen + #700, #2560
+  static instructionScreen + #701, #2560
+  static instructionScreen + #702, #2560
+  static instructionScreen + #703, #2560
+  static instructionScreen + #704, #2560
+  static instructionScreen + #705, #2560
+  static instructionScreen + #706, #2560
+  static instructionScreen + #707, #2156
+  static instructionScreen + #708, #2149
+  static instructionScreen + #709, #2150
+  static instructionScreen + #710, #2164
+  static instructionScreen + #711, #2560
+  static instructionScreen + #712, #2147
+  static instructionScreen + #713, #2159
+  static instructionScreen + #714, #2162
+  static instructionScreen + #715, #2158
+  static instructionScreen + #716, #2149
+  static instructionScreen + #717, #2162
+  static instructionScreen + #718, #2560
+  static instructionScreen + #719, #2560
+
+  ;Linha 18
+  static instructionScreen + #720, #2560
+  static instructionScreen + #721, #2560
+  static instructionScreen + #722, #2560
+  static instructionScreen + #723, #2560
+  static instructionScreen + #724, #2560
+  static instructionScreen + #725, #2560
+  static instructionScreen + #726, #2560
+  static instructionScreen + #727, #2560
+  static instructionScreen + #728, #2560
+  static instructionScreen + #729, #2560
+  static instructionScreen + #730, #2560
+  static instructionScreen + #731, #2560
+  static instructionScreen + #732, #2560
+  static instructionScreen + #733, #2560
+  static instructionScreen + #734, #2560
+  static instructionScreen + #735, #2560
+  static instructionScreen + #736, #2560
+  static instructionScreen + #737, #2560
+  static instructionScreen + #738, #2560
+  static instructionScreen + #739, #2560
+  static instructionScreen + #740, #2560
+  static instructionScreen + #741, #2560
+  static instructionScreen + #742, #2560
+  static instructionScreen + #743, #2560
+  static instructionScreen + #744, #2560
+  static instructionScreen + #745, #2560
+  static instructionScreen + #746, #2560
+  static instructionScreen + #747, #2560
+  static instructionScreen + #748, #2560
+  static instructionScreen + #749, #2560
+  static instructionScreen + #750, #2560
+  static instructionScreen + #751, #2560
+  static instructionScreen + #752, #2560
+  static instructionScreen + #753, #2560
+  static instructionScreen + #754, #2560
+  static instructionScreen + #755, #2560
+  static instructionScreen + #756, #2560
+  static instructionScreen + #757, #2560
+  static instructionScreen + #758, #2560
+  static instructionScreen + #759, #2560
+
+  ;Linha 19
+  static instructionScreen + #760, #2560
+  static instructionScreen + #761, #2560
+  static instructionScreen + #762, #2560
+  static instructionScreen + #763, #2114
+  static instructionScreen + #764, #2165
+  static instructionScreen + #765, #2164
+  static instructionScreen + #766, #2560
+  static instructionScreen + #767, #2146
+  static instructionScreen + #768, #2149
+  static instructionScreen + #769, #2560
+  static instructionScreen + #770, #2147
+  static instructionScreen + #771, #2145
+  static instructionScreen + #772, #2162
+  static instructionScreen + #773, #2149
+  static instructionScreen + #774, #2150
+  static instructionScreen + #775, #2165
+  static instructionScreen + #776, #2156
+  static instructionScreen + #777, #2560
+  static instructionScreen + #778, #2167
+  static instructionScreen + #779, #2153
+  static instructionScreen + #780, #2164
+  static instructionScreen + #781, #2152
+  static instructionScreen + #782, #2560
+  static instructionScreen + #783, #2560
+  static instructionScreen + #784, #2560
+  static instructionScreen + #785, #2560
+  static instructionScreen + #786, #2560
+  static instructionScreen + #787, #2159
+  static instructionScreen + #788, #2150
+  static instructionScreen + #789, #2560
+  static instructionScreen + #790, #2164
+  static instructionScreen + #791, #2152
+  static instructionScreen + #792, #2149
+  static instructionScreen + #793, #2560
+  static instructionScreen + #794, #2560
+  static instructionScreen + #795, #2560
+  static instructionScreen + #796, #2560
+  static instructionScreen + #797, #2560
+  static instructionScreen + #798, #2560
+  static instructionScreen + #799, #2560
+
+  ;Linha 20
+  static instructionScreen + #800, #2560
+  static instructionScreen + #801, #2560
+  static instructionScreen + #802, #2560
+  static instructionScreen + #803, #2560
+  static instructionScreen + #804, #2560
+  static instructionScreen + #805, #2560
+  static instructionScreen + #806, #2560
+  static instructionScreen + #807, #2560
+  static instructionScreen + #808, #2560
+  static instructionScreen + #809, #2560
+  static instructionScreen + #810, #2560
+  static instructionScreen + #811, #2560
+  static instructionScreen + #812, #2560
+  static instructionScreen + #813, #2560
+  static instructionScreen + #814, #2560
+  static instructionScreen + #815, #2560
+  static instructionScreen + #816, #2560
+  static instructionScreen + #817, #2560
+  static instructionScreen + #818, #2560
+  static instructionScreen + #819, #2560
+  static instructionScreen + #820, #2560
+  static instructionScreen + #821, #2560
+  static instructionScreen + #822, #2560
+  static instructionScreen + #823, #2560
+  static instructionScreen + #824, #2560
+  static instructionScreen + #825, #2560
+  static instructionScreen + #826, #2560
+  static instructionScreen + #827, #2560
+  static instructionScreen + #828, #2560
+  static instructionScreen + #829, #2560
+  static instructionScreen + #830, #2560
+  static instructionScreen + #831, #2560
+  static instructionScreen + #832, #2560
+  static instructionScreen + #833, #2560
+  static instructionScreen + #834, #2560
+  static instructionScreen + #835, #2560
+  static instructionScreen + #836, #2560
+  static instructionScreen + #837, #2560
+  static instructionScreen + #838, #2560
+  static instructionScreen + #839, #2560
+
+  ;Linha 21
+  static instructionScreen + #840, #2560
+  static instructionScreen + #841, #2560
+  static instructionScreen + #842, #2560
+  static instructionScreen + #843, #2164
+  static instructionScreen + #844, #2152
+  static instructionScreen + #845, #2149
+  static instructionScreen + #846, #2560
+  static instructionScreen + #847, #2145
+  static instructionScreen + #848, #2148
+  static instructionScreen + #849, #2165
+  static instructionScreen + #850, #2156
+  static instructionScreen + #851, #2164
+  static instructionScreen + #852, #2560
+  static instructionScreen + #853, #2146
+  static instructionScreen + #854, #2149
+  static instructionScreen + #855, #2149
+  static instructionScreen + #856, #2163
+  static instructionScreen + #857, #2094
+  static instructionScreen + #858, #2560
+  static instructionScreen + #859, #2560
+  static instructionScreen + #860, #2560
+  static instructionScreen + #861, #2560
+  static instructionScreen + #862, #2560
+  static instructionScreen + #863, #2560
+  static instructionScreen + #864, #2560
+  static instructionScreen + #865, #2560
+  static instructionScreen + #866, #2560
+  static instructionScreen + #867, #2163
+  static instructionScreen + #868, #2147
+  static instructionScreen + #869, #2162
+  static instructionScreen + #870, #2149
+  static instructionScreen + #871, #2149
+  static instructionScreen + #872, #2158
+  static instructionScreen + #873, #2110
+  static instructionScreen + #874, #2560
+  static instructionScreen + #875, #3391
+  static instructionScreen + #876, #2560
+  static instructionScreen + #877, #2560
+  static instructionScreen + #878, #2560
+  static instructionScreen + #879, #2560
+
+  ;Linha 22
+  static instructionScreen + #880, #2560
+  static instructionScreen + #881, #2560
+  static instructionScreen + #882, #2560
+  static instructionScreen + #883, #2560
+  static instructionScreen + #884, #2560
+  static instructionScreen + #885, #2560
+  static instructionScreen + #886, #2560
+  static instructionScreen + #887, #2560
+  static instructionScreen + #888, #2560
+  static instructionScreen + #889, #2560
+  static instructionScreen + #890, #2560
+  static instructionScreen + #891, #2560
+  static instructionScreen + #892, #2560
+  static instructionScreen + #893, #2560
+  static instructionScreen + #894, #2560
+  static instructionScreen + #895, #2560
+  static instructionScreen + #896, #2560
+  static instructionScreen + #897, #2560
+  static instructionScreen + #898, #2560
+  static instructionScreen + #899, #2560
+  static instructionScreen + #900, #2560
+  static instructionScreen + #901, #2560
+  static instructionScreen + #902, #2560
+  static instructionScreen + #903, #2560
+  static instructionScreen + #904, #2560
+  static instructionScreen + #905, #2560
+  static instructionScreen + #906, #2560
+  static instructionScreen + #907, #2560
+  static instructionScreen + #908, #2560
+  static instructionScreen + #909, #2560
+  static instructionScreen + #910, #2560
+  static instructionScreen + #911, #2560
+  static instructionScreen + #912, #2560
+  static instructionScreen + #913, #2560
+  static instructionScreen + #914, #2560
+  static instructionScreen + #915, #2560
+  static instructionScreen + #916, #2560
+  static instructionScreen + #917, #2560
+  static instructionScreen + #918, #2560
+  static instructionScreen + #919, #2560
+
+  ;Linha 23
+  static instructionScreen + #920, #2560
+  static instructionScreen + #921, #2560
+  static instructionScreen + #922, #2560
+  static instructionScreen + #923, #2132
+  static instructionScreen + #924, #2152
+  static instructionScreen + #925, #2149
+  static instructionScreen + #926, #2169
+  static instructionScreen + #927, #2560
+  static instructionScreen + #928, #2167
+  static instructionScreen + #929, #2159
+  static instructionScreen + #930, #2158
+  static instructionScreen + #931, #2087
+  static instructionScreen + #932, #2164
+  static instructionScreen + #933, #2560
+  static instructionScreen + #934, #2156
+  static instructionScreen + #935, #2153
+  static instructionScreen + #936, #2155
+  static instructionScreen + #937, #2149
+  static instructionScreen + #938, #2560
+  static instructionScreen + #939, #2163
+  static instructionScreen + #940, #2149
+  static instructionScreen + #941, #2149
+  static instructionScreen + #942, #2153
+  static instructionScreen + #943, #2158
+  static instructionScreen + #944, #2151
+  static instructionScreen + #945, #2560
+  static instructionScreen + #946, #2560
+  static instructionScreen + #947, #2560
+  static instructionScreen + #948, #2560
+  static instructionScreen + #949, #2560
+  static instructionScreen + #950, #2560
+  static instructionScreen + #951, #2560
+  static instructionScreen + #952, #2560
+  static instructionScreen + #953, #768
+  static instructionScreen + #954, #2560
+  static instructionScreen + #955, #2560
+  static instructionScreen + #956, #2560
+  static instructionScreen + #957, #2560
+  static instructionScreen + #958, #768
+  static instructionScreen + #959, #2560
+
+  ;Linha 24
+  static instructionScreen + #960, #2560
+  static instructionScreen + #961, #2560
+  static instructionScreen + #962, #2560
+  static instructionScreen + #963, #2560
+  static instructionScreen + #964, #2560
+  static instructionScreen + #965, #2560
+  static instructionScreen + #966, #2560
+  static instructionScreen + #967, #2560
+  static instructionScreen + #968, #2560
+  static instructionScreen + #969, #2560
+  static instructionScreen + #970, #2560
+  static instructionScreen + #971, #2560
+  static instructionScreen + #972, #2560
+  static instructionScreen + #973, #2560
+  static instructionScreen + #974, #2560
+  static instructionScreen + #975, #2560
+  static instructionScreen + #976, #2560
+  static instructionScreen + #977, #2560
+  static instructionScreen + #978, #2560
+  static instructionScreen + #979, #2560
+  static instructionScreen + #980, #2560
+  static instructionScreen + #981, #2560
+  static instructionScreen + #982, #2560
+  static instructionScreen + #983, #2560
+  static instructionScreen + #984, #2560
+  static instructionScreen + #985, #2560
+  static instructionScreen + #986, #2560
+  static instructionScreen + #987, #2560
+  static instructionScreen + #988, #768
+  static instructionScreen + #989, #768
+  static instructionScreen + #990, #2560
+  static instructionScreen + #991, #2560
+  static instructionScreen + #992, #2560
+  static instructionScreen + #993, #768
+  static instructionScreen + #994, #768
+  static instructionScreen + #995, #3072
+  static instructionScreen + #996, #768
+  static instructionScreen + #997, #768
+  static instructionScreen + #998, #2560
+  static instructionScreen + #999, #2560
+
+  ;Linha 25
+  static instructionScreen + #1000, #2560
+  static instructionScreen + #1001, #2560
+  static instructionScreen + #1002, #2560
+  static instructionScreen + #1003, #2169
+  static instructionScreen + #1004, #2159
+  static instructionScreen + #1005, #2165
+  static instructionScreen + #1006, #2560
+  static instructionScreen + #1007, #2162
+  static instructionScreen + #1008, #2159
+  static instructionScreen + #1009, #2145
+  static instructionScreen + #1010, #2157
+  static instructionScreen + #1011, #2153
+  static instructionScreen + #1012, #2158
+  static instructionScreen + #1013, #2151
+  static instructionScreen + #1014, #2560
+  static instructionScreen + #1015, #2159
+  static instructionScreen + #1016, #2166
+  static instructionScreen + #1017, #2149
+  static instructionScreen + #1018, #2162
+  static instructionScreen + #1019, #2560
+  static instructionScreen + #1020, #2560
+  static instructionScreen + #1021, #2560
+  static instructionScreen + #1022, #3134
+  static instructionScreen + #1023, #2560
+  static instructionScreen + #1024, #2560
+  static instructionScreen + #1025, #2560
+  static instructionScreen + #1026, #2560
+  static instructionScreen + #1027, #768
+  static instructionScreen + #1028, #768
+  static instructionScreen + #1029, #768
+  static instructionScreen + #1030, #768
+  static instructionScreen + #1031, #2560
+  static instructionScreen + #1032, #768
+  static instructionScreen + #1033, #3328
+  static instructionScreen + #1034, #3072
+  static instructionScreen + #1035, #2816
+  static instructionScreen + #1036, #3072
+  static instructionScreen + #1037, #1280
+  static instructionScreen + #1038, #2560
+  static instructionScreen + #1039, #2560
+
+  ;Linha 26
+  static instructionScreen + #1040, #2560
+  static instructionScreen + #1041, #2560
+  static instructionScreen + #1042, #2560
+  static instructionScreen + #1043, #2560
+  static instructionScreen + #1044, #2560
+  static instructionScreen + #1045, #2560
+  static instructionScreen + #1046, #2560
+  static instructionScreen + #1047, #2560
+  static instructionScreen + #1048, #2560
+  static instructionScreen + #1049, #2560
+  static instructionScreen + #1050, #2560
+  static instructionScreen + #1051, #2560
+  static instructionScreen + #1052, #2560
+  static instructionScreen + #1053, #2560
+  static instructionScreen + #1054, #2560
+  static instructionScreen + #1055, #2560
+  static instructionScreen + #1056, #2560
+  static instructionScreen + #1057, #2560
+  static instructionScreen + #1058, #2560
+  static instructionScreen + #1059, #2560
+  static instructionScreen + #1060, #2560
+  static instructionScreen + #1061, #2560
+  static instructionScreen + #1062, #2560
+  static instructionScreen + #1063, #2560
+  static instructionScreen + #1064, #2560
+  static instructionScreen + #1065, #2560
+  static instructionScreen + #1066, #2560
+  static instructionScreen + #1067, #768
+  static instructionScreen + #1068, #768
+  static instructionScreen + #1069, #768
+  static instructionScreen + #1070, #768
+  static instructionScreen + #1071, #2560
+  static instructionScreen + #1072, #3328
+  static instructionScreen + #1073, #2816
+  static instructionScreen + #1074, #3328
+  static instructionScreen + #1075, #3072
+  static instructionScreen + #1076, #1280
+  static instructionScreen + #1077, #2816
+  static instructionScreen + #1078, #1280
+  static instructionScreen + #1079, #2560
+
+  ;Linha 27
+  static instructionScreen + #1080, #2560
+  static instructionScreen + #1081, #2560
+  static instructionScreen + #1082, #2560
+  static instructionScreen + #1083, #2164
+  static instructionScreen + #1084, #2152
+  static instructionScreen + #1085, #2149
+  static instructionScreen + #1086, #2153
+  static instructionScreen + #1087, #2162
+  static instructionScreen + #1088, #2560
+  static instructionScreen + #1089, #2146
+  static instructionScreen + #1090, #2145
+  static instructionScreen + #1091, #2163
+  static instructionScreen + #1092, #2149
+  static instructionScreen + #1093, #2110
+  static instructionScreen + #1094, #2560
+  static instructionScreen + #1095, #2560
+  static instructionScreen + #1096, #2560
+  static instructionScreen + #1097, #2560
+  static instructionScreen + #1098, #2560
+  static instructionScreen + #1099, #2560
+  static instructionScreen + #1100, #2560
+  static instructionScreen + #1101, #2826
+  static instructionScreen + #1102, #2827
+  static instructionScreen + #1103, #2062
+  static instructionScreen + #1104, #2560
+  static instructionScreen + #1105, #2560
+  static instructionScreen + #1106, #2560
+  static instructionScreen + #1107, #2560
+  static instructionScreen + #1108, #256
+  static instructionScreen + #1109, #256
+  static instructionScreen + #1110, #2560
+  static instructionScreen + #1111, #2560
+  static instructionScreen + #1112, #2560
+  static instructionScreen + #1113, #3328
+  static instructionScreen + #1114, #768
+  static instructionScreen + #1115, #768
+  static instructionScreen + #1116, #2560
+  static instructionScreen + #1117, #1280
+  static instructionScreen + #1118, #768
+  static instructionScreen + #1119, #2560
+
+  ;Linha 28
+  static instructionScreen + #1120, #2560
+  static instructionScreen + #1121, #2560
+  static instructionScreen + #1122, #2560
+  static instructionScreen + #1123, #2560
+  static instructionScreen + #1124, #2560
+  static instructionScreen + #1125, #2560
+  static instructionScreen + #1126, #2560
+  static instructionScreen + #1127, #2560
+  static instructionScreen + #1128, #2560
+  static instructionScreen + #1129, #2560
+  static instructionScreen + #1130, #2560
+  static instructionScreen + #1131, #2560
+  static instructionScreen + #1132, #2560
+  static instructionScreen + #1133, #2560
+  static instructionScreen + #1134, #2560
+  static instructionScreen + #1135, #2560
+  static instructionScreen + #1136, #2560
+  static instructionScreen + #1137, #2560
+  static instructionScreen + #1138, #2560
+  static instructionScreen + #1139, #2560
+  static instructionScreen + #1140, #2560
+  static instructionScreen + #1141, #2829
+  static instructionScreen + #1142, #2828
+  static instructionScreen + #1143, #2560
+  static instructionScreen + #1144, #2560
+  static instructionScreen + #1145, #2560
+  static instructionScreen + #1146, #2560
+  static instructionScreen + #1147, #2560
+  static instructionScreen + #1148, #256
+  static instructionScreen + #1149, #256
+  static instructionScreen + #1150, #2560
+  static instructionScreen + #1151, #2560
+  static instructionScreen + #1152, #2560
+  static instructionScreen + #1153, #2560
+  static instructionScreen + #1154, #2560
+  static instructionScreen + #1155, #2560
+  static instructionScreen + #1156, #2560
+  static instructionScreen + #1157, #2560
+  static instructionScreen + #1158, #2560
+  static instructionScreen + #1159, #2560
+
+  ;Linha 29
+  static instructionScreen + #1160, #2560
+  static instructionScreen + #1161, #2560
+  static instructionScreen + #1162, #2560
+  static instructionScreen + #1163, #2560
+  static instructionScreen + #1164, #2560
+  static instructionScreen + #1165, #2560
+  static instructionScreen + #1166, #2560
+  static instructionScreen + #1167, #2560
+  static instructionScreen + #1168, #2560
+  static instructionScreen + #1169, #2560
+  static instructionScreen + #1170, #2560
+  static instructionScreen + #1171, #2560
+  static instructionScreen + #1172, #2560
+  static instructionScreen + #1173, #2560
+  static instructionScreen + #1174, #2560
+  static instructionScreen + #1175, #2560
+  static instructionScreen + #1176, #2560
+  static instructionScreen + #1177, #2560
+  static instructionScreen + #1178, #2560
+  static instructionScreen + #1179, #2560
+  static instructionScreen + #1180, #2560
+  static instructionScreen + #1181, #2560
+  static instructionScreen + #1182, #2560
+  static instructionScreen + #1183, #2560
+  static instructionScreen + #1184, #2560
+  static instructionScreen + #1185, #2560
+  static instructionScreen + #1186, #2560
+  static instructionScreen + #1187, #2560
+  static instructionScreen + #1188, #2560
+  static instructionScreen + #1189, #2560
+  static instructionScreen + #1190, #2560
+  static instructionScreen + #1191, #2560
+  static instructionScreen + #1192, #2560
+  static instructionScreen + #1193, #2560
+  static instructionScreen + #1194, #2560
+  static instructionScreen + #1195, #2560
+  static instructionScreen + #1196, #2560
+  static instructionScreen + #1197, #2560
+  static instructionScreen + #1198, #2560
+  static instructionScreen + #1199, #2560
