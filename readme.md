@@ -1,4 +1,4 @@
-# 🥩 Carnivore Game
+# 🌸 Carnivore Game
 
 Welcome to **Carnivore**, a game developed in **assembly language** using the ICMC processor from the University of São Paulo! This README will guide you through setting up the simulator and running the game.
 
@@ -23,6 +23,14 @@ Carnivore is a retro-style game designed for the ICMC processor. Test your skill
 
 ---
 
+## 🖼️ Processor Architecture
+
+![Processor Architecture](readme.md/architecture.png)
+
+The image above illustrates the architecture of the ICMC processor, providing an overview of its components and design principles.
+
+---
+
 ## 🚀 Running the Game
 
 1. Compile the **Carnivore** game assembly code.
@@ -42,4 +50,5 @@ Carnivore is a retro-style game designed for the ICMC processor. Test your skill
 
 This project is licensed under the terms specified in the [Carnivore Game] repository.
 
-Enjoy the hunt! 🦖🎯
+Enjoy the hunt! 🌱🎯
+
