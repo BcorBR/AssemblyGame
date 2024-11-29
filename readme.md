@@ -30,12 +30,6 @@ The image above illustrates the architecture of the ICMC processor, providing an
 
 ---
 
-## 🚀 Running the Game
-
-1. Compile the **Carnivore** game assembly code.
-2. Load the compiled game into the simulator.
-3. Start playing!
-
 ### 🕹️ Step-by-Step Tutorial
 
 1. Open the simulator (`simgo`).
