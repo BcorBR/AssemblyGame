@@ -41,6 +41,12 @@ The image above illustrates the architecture of the ICMC processor, providing an
 
 ---
 
+## 📹 Video Demonstration
+
+Watch a video explaining the code and showcasing the game: [Carnivore Game Demonstration](https://www.youtube.com/watch?v=45w06YsUfgE)
+
+---
+
 ## 💡 Tips
 
 - Use the `--help` option in the simulator to explore its features.
@@ -53,4 +59,3 @@ The image above illustrates the architecture of the ICMC processor, providing an
 This project is licensed under the terms specified in the [Carnivore Game] repository.
 
 Enjoy the hunt! 🌱🎯
-
